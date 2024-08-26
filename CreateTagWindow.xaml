@@ -1,0 +1,24 @@
+<Window x:Class="Filterizer2.CreateTagWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Create New Tag" Height="350" Width="450">
+    <Border x:Name="MainBorder" BorderBrush="Gray" BorderThickness="2" CornerRadius="10" Padding="10">
+        <Grid>
+            <StackPanel>
+                <TextBlock Text="Tag Name:" Margin="0,0,0,5"/>
+                <TextBox x:Name="TagNameTextBox" Width="350" Margin="0,0,0,10" BorderBrush="Gray" BorderThickness="2"/>
+
+                <TextBlock Text="Tag Type:" Margin="0,0,0,5"/>
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox x:Name="TagTypeComboBox" Width="150" SelectionChanged="TagTypeComboBox_SelectionChanged" Margin="0,0,10,0"/>
+                    <TextBlock x:Name="TagDescriptionTextBlock" Width="180" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <TextBlock Text="Description:" Margin="10,10,0,5"/>
+                <TextBox x:Name="TagDescriptionTextBox" Width="350" Height="100" TextWrapping="Wrap" Margin="0,0,0,10" BorderBrush="Gray" BorderThickness="2"/>
+
+                <Button Content="Create Tag" Click="CreateTagButton_Click" Width="100" Height="30" HorizontalAlignment="Right"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Filterizer2")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+684ced4b680085097492fd46e99e67a6fba93f2e")]
 [assembly: System.Reflection.AssemblyProductAttribute("Filterizer2")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Filterizer2")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
