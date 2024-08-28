@@ -49,12 +49,12 @@ namespace Filterizer2
                 var connection = new SQLiteConnection($"Data Source={databasePath}");
                 connection.Open();
 
-                // If the database didn't exist, create it
-                if (!dbExists)
-                {
-                    createDatabase.Invoke();
-                }
-
+                // If the database doesn't exist, create it
+                if (dbExists && CheckedThisLaunch) return connection;
+                
+                createDatabase.Invoke();
+                CheckedThisLaunch = true;
+                
                 return connection;
             }
             catch (Exception ex)
@@ -63,6 +63,8 @@ namespace Filterizer2
                 throw;
             }
         }
+
+        private static bool CheckedThisLaunch = false;
 
         /// <summary>
         /// Creates the Media database with the required schema.
@@ -75,26 +77,33 @@ namespace Filterizer2
             foreach (string createTableQuery in new string[]
                      {
                          @"
-                    CREATE TABLE Media (
+                    CREATE TABLE IF NOT EXISTS Media (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         LocalFilename TEXT NOT NULL,
                         Title TEXT,
                         Description TEXT
                     );",
                          @"
-                    CREATE TABLE Tags (
+                    CREATE TABLE IF NOT EXISTS Tags (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         Name TEXT NOT NULL,
                         Category INTEGER,
                         Description TEXT
                     );",
                          @"
-                    CREATE TABLE MediaTags (
+                    CREATE TABLE IF NOT EXISTS MediaTags (
                         MediaId INTEGER NOT NULL,
                         TagId INTEGER NOT NULL,
                         PRIMARY KEY (MediaId, TagId),
                         FOREIGN KEY (MediaId) REFERENCES Media(Id),
                         FOREIGN KEY (TagId) REFERENCES Tags(Id)
+                    );",
+                         @"
+                    CREATE TABLE IF NOT EXISTS TagAliases (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        TagId INTEGER NOT NULL,
+                        Alias TEXT NOT NULL,
+                        FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE
                     );"
                      })
             {
@@ -102,6 +111,19 @@ namespace Filterizer2
                 command.ExecuteNonQuery();
             }
 
+        }
+        
+        public static bool ShowConfirmationDialog(string confirmationText)
+        {
+            // Show a MessageBox with Yes and No options
+            var result = MessageBox.Show(
+                confirmationText, 
+                "Confirmation",  // Title of the dialog
+                MessageBoxButton.YesNo,  // Options available to the user
+                MessageBoxImage.Question);  // Icon shown in the dialog
+
+            // Return true if the user clicked "Yes" (confirm), false otherwise
+            return result == MessageBoxResult.Yes;
         }
     }
 }

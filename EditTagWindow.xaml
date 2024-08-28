@@ -1,10 +1,15 @@
-<Window x:Class="Filterizer2.CreateTagWindow"
+<Window x:Class="Filterizer2.EditTagWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Create New Tag" Height="350" Width="450">
+        Title="Create New Tag" Height="500" Width="450">
     <Border x:Name="MainBorder" BorderBrush="Gray" BorderThickness="2" CornerRadius="10" Padding="10">
         <Grid>
-            <StackPanel>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <StackPanel Grid.Row="0">
                 <TextBlock Text="Tag Name:" Margin="0,0,0,5"/>
                 <TextBox x:Name="TagNameTextBox" Width="350" Margin="0,0,0,10" BorderBrush="Gray" BorderThickness="2"/>
 
@@ -19,6 +24,22 @@
 
                 <Button Content="Create Tag" Click="CreateTagButton_Click" Width="100" Height="30" HorizontalAlignment="Right"/>
             </StackPanel>
+            
+            
+            <!-- Aliases Management -->
+            <GroupBox Grid.Row="1" Header="Aliases" Margin="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ListBox x:Name="AliasesListBox" Grid.Row="0" Margin="5" MinHeight="100"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+                        <Button Content="Add Alias" Click="AddAlias_Click" Margin="5"/>
+                        <Button Content="Remove Alias" Click="RemoveAlias_Click" Margin="5"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
         </Grid>
     </Border>
 </Window>

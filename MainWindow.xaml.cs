@@ -29,12 +29,6 @@ public partial class MainWindow : Window
         VlcPlayer.SourceProvider.CreatePlayer(new DirectoryInfo(libDirectory));
     }
     
-    private void CreateTagButton_Click(object sender, RoutedEventArgs e)
-    {
-        var createTagWindow = new CreateTagWindow();
-        createTagWindow.ShowDialog();
-    }
-    
     private void LoadMediaButton_Click(object sender, RoutedEventArgs e)
     {
         var openFileDialog = new OpenFileDialog
@@ -189,6 +183,12 @@ public partial class MainWindow : Window
         }
     }
     
+    
+    private void OpenTagDictionaryButton_Click(object sender, RoutedEventArgs e)
+    {
+        TagDictionaryWindow tagDictionaryWindow = new TagDictionaryWindow();
+        tagDictionaryWindow.Show();
+    }
     
     
     private void SearchButton_Click(object sender, RoutedEventArgs e)

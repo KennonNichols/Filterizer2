@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using XamlAnimatedGif;
@@ -13,6 +14,8 @@ namespace Filterizer2
         public string MediaDescription => DescriptionTextBox.Text;
 
         private readonly string _mediaFilePath;
+        
+        private List<TagItem> currentTags = new List<TagItem>();
 
         public NewMediaEntryWindow(string mediaFilePath)
         {
@@ -112,6 +115,55 @@ namespace Filterizer2
                 ImageView.EndInit();
             }
         }
-    }
+        
+        
+        // Handles the tag search when the text changes
+        private void TagSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string searchText = TagSearchTextBox.Text;
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                List<TagItem> searchResults = TagRepository.SearchTags(searchText);
+                TagSearchResultsListBox.ItemsSource = searchResults.Take(10).ToList();
+            }
+            else
+            {
+                TagSearchResultsListBox.ItemsSource = null;
+            }
+        }
 
+        // Handles adding a tag when a search result is clicked
+        private void TagSearchResultsListBox_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TagSearchResultsListBox.SelectedItem is TagItem selectedTag)
+            {
+                if (!currentTags.Contains(selectedTag))
+                {
+                    currentTags.Add(selectedTag);
+                    CurrentTagsItemsControl.ItemsSource = null;
+                    CurrentTagsItemsControl.ItemsSource = currentTags;
+                }
+
+                TagSearchTextBox.Text = string.Empty;
+                TagSearchResultsListBox.ItemsSource = null;
+            }
+        }
+
+        // Handles removing a tag from the current tags list
+        private void RemoveTagButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.CommandParameter is TagItem tagToRemove)
+            {
+                currentTags.Remove(tagToRemove);
+                CurrentTagsItemsControl.ItemsSource = null;
+                CurrentTagsItemsControl.ItemsSource = currentTags;
+            }
+        }
+
+        // Ensure currentTags are accessible when saving
+        public List<TagItem> GetSelectedTags()
+        {
+            return currentTags;
+        }
+    }
 }

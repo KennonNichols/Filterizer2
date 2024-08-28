@@ -9,11 +9,11 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10">
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10" Height="20">
             <Button x:Name="LoadMediaButton" Content="Load Media" Width="100" Click="LoadMediaButton_Click"/>
             <Button x:Name="SearchButton" Content="Search" Width="100" Margin="10,0,0,0" Click="SearchButton_Click"/>
             <TextBox x:Name="SearchTextBox" Width="200" Margin="10,0,0,0" Text="Search by tags..."/>
-            <Button Content="Create New Tag" Click="CreateTagButton_Click" Width="150" Height="30" Margin="10"/>
+            <Button Content="Tag Dictionary" Click="OpenTagDictionaryButton_Click" Width="150" Height="20" Margin="10, 0, 0, 0"/>
         </StackPanel>
 
         <Grid Grid.Row="1">

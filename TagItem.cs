@@ -6,5 +6,6 @@ namespace Filterizer2
         public string Name { get; set; }
         public TagCategory Category { get; set; }
         public string Description { get; set; }
+        public List<string> Aliases { get; set; } = new List<string>();
     }
 }
