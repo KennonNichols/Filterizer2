@@ -11,7 +11,7 @@
 
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10" Height="20">
             <Button x:Name="LoadMediaButton" Content="Load Media" Width="100" Click="LoadMediaButton_Click"/>
-            <Button x:Name="SearchButton" Content="Search" Width="100" Margin="10,0,0,0" Click="SearchButton_Click"/>
+            <Button x:Name="SearchButton" Content="Search" Width="100" Margin="10,0,0,0" Click="FilterButton_Click"/>
             <TextBox x:Name="SearchTextBox" Width="200" Margin="10,0,0,0" Text="Search by tags..."/>
             <Button Content="Tag Dictionary" Click="OpenTagDictionaryButton_Click" Width="150" Height="20" Margin="10, 0, 0, 0"/>
         </StackPanel>
@@ -34,9 +34,20 @@
                 </ListBox.ItemTemplate>
             </ListBox>
             <Grid Grid.Column="1">
-                <wpf:VlcControl x:Name="VlcPlayer" Visibility="Collapsed" />
-                <Image x:Name="ImageView" Visibility="Collapsed"/>
-                <MediaElement x:Name="VideoPlayer" Visibility="Collapsed"/>
+                <StackPanel>
+                    <Border x:Name="ViewingWindow" BorderBrush="LightGray" BorderThickness="1" MinHeight="350">
+                        <Grid>
+                            <wpf:VlcControl x:Name="VlcPlayer" Visibility="Collapsed" />
+                            <Image x:Name="ImageView" Visibility="Collapsed"/>
+                            <MediaElement x:Name="VideoPlayer" Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Edit" Name="EditMediaButton" Margin="20,5,10,0" Click="EditMediaButton_Click"/>
+                        <Button Content="Delete" Name="DeleteMediaButton" IsEnabled="False" Margin="20,5,10,0" Click="DeleteMediaButton_Click"/>
+                    </StackPanel>
+                </StackPanel>
+                
             </Grid>
         </Grid>
     </Grid>

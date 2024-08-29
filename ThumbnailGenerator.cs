@@ -8,11 +8,13 @@ namespace Filterizer2
 {
     public class ThumbnailGenerator
     {
-        public static string GenerateThumbnail(string mediaFilePath, string thumbsDirectory)
+        public static string GenerateOrGetThumbnail(string mediaFilePath)
         {
             string fileName = Path.GetFileName(mediaFilePath);
-            string thumbnailPath = Path.Combine(thumbsDirectory, fileName);
+            //Save all as jpg
+            string thumbnailPath = Path.ChangeExtension(Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs"), fileName), ".jpg");
 
+            
             if (File.Exists(thumbnailPath))
             {
                 return thumbnailPath;
@@ -28,12 +30,12 @@ namespace Filterizer2
                     case ".jpg":
                     case ".jpeg":
                     case ".webp":
+                    case ".gif":
                         GenerateImageThumbnail(mediaFilePath, thumbnailPath);
                         break;
 
                     case ".mp4":
                     case ".webm":
-                    case ".gif":
                         GenerateVideoOrGifThumbnail(mediaFilePath, thumbnailPath);
                         break;
 
@@ -53,22 +55,12 @@ namespace Filterizer2
         {
             using var image = new Bitmap(imagePath);
             var thumbnail = image.GetThumbnailImage(64, 64, () => false, IntPtr.Zero);
-            thumbnail.Save(thumbnailPath, ImageFormat.Png);
+            thumbnail.Save(thumbnailPath, ImageFormat.Jpeg);
         }
 
         private static void GenerateVideoOrGifThumbnail(string mediaPath, string thumbnailPath)
         {
-            using (var mediaPlayer = new Vlc.DotNet.Core.VlcMediaPlayer(new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libvlc"))))
-            {
-                mediaPlayer.SetMedia(new FileInfo(mediaPath));
-                //TODO? mediaPlayer.Position = 0.1f;
-
-                mediaPlayer.Play();
-
-                mediaPlayer.TakeSnapshot(new FileInfo(thumbnailPath), 64, 64);
-
-                mediaPlayer.Stop();
-            }
+            new FFMPEG().GetThumbnail(mediaPath, thumbnailPath);
         }
 
         private static Bitmap ResizeImage(Bitmap imgToResize, int width, int height)

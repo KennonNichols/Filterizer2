@@ -28,6 +28,13 @@ public partial class MainWindow : Window
         var libDirectory = Path.Combine(currentDirectory, "libvlc");
         VlcPlayer.SourceProvider.CreatePlayer(new DirectoryInfo(libDirectory));
     }
+
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+
+        ViewingWindow.MaxHeight = sizeInfo.NewSize.Height - 150;
+    }
     
     private void LoadMediaButton_Click(object sender, RoutedEventArgs e)
     {
@@ -60,7 +67,7 @@ public partial class MainWindow : Window
             if (localFilePath != null)
             {
                 // Generate or retrieve the thumbnail
-                string thumbnailPath = ThumbnailGenerator.GenerateThumbnail(localFilePath, thumbsDirectory);
+                ThumbnailGenerator.GenerateOrGetThumbnail(localFilePath);
 
                 
                 
@@ -68,46 +75,18 @@ public partial class MainWindow : Window
                 
                 
                 // Open the NewMediaEntryWindow to get user input
-                NewMediaEntryWindow entryWindow = new NewMediaEntryWindow(localFilePath);
-                bool? dialogResult = entryWindow.ShowDialog();
+                EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(localFilePath);
+                entryWindow.ShowDialog();
 
-                if (dialogResult == true)
-                {
-                    // Create the MediaItem with user-provided details
-                    MediaItem item = new MediaItem
-                    {
-                        Title = entryWindow.MediaTitle,
-                        Description = entryWindow.MediaDescription,
-                        LocalFilename = localFilePath,
-                        Tags = new List<TagItem>()
-                    };
+                // Create the MediaItem with user-provided details
+                MediaItem item = entryWindow.GetMediaItem();
 
-                    // Store media in database
-                    MediaRepository.AddMedia(item);
+                // Store media in database
+                MediaRepository.AddMedia(item);
 
-                    // Add to MediaListBox
-                    MediaListBox.Items.Add(item);
-                }
-                else
-                {
-                    // Delete the local copy if the operation is canceled
-                    try
-                    {
-                        File.Delete(localFilePath);
-                        File.Delete(thumbnailPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Failed to delete file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
+                // Add to MediaListBox
+                MediaListBox.Items.Add(item);
             }
-            
-            
-            
-            
-            
-
         }
     }
     
@@ -116,9 +95,19 @@ public partial class MainWindow : Window
         if (MediaListBox.SelectedItem is MediaItem mediaItem)
         {
             ShowMedia(mediaItem.LocalFilename);
+
+            DeleteMediaButton.IsEnabled = true;
+            EditMediaButton.IsEnabled = true;
+        }
+        else
+        {
+            StopShowingMedia();
+            
+            DeleteMediaButton.IsEnabled = false;
+            EditMediaButton.IsEnabled = false;
         }
     }
-    
+
     private void LoadAllMediaItems()
     {
         var mediaItems = MediaRepository.GetAllMediaItems();
@@ -126,6 +115,25 @@ public partial class MainWindow : Window
         {
             MediaListBox.Items.Add(mediaItem);
         }
+    }
+
+    private void StopShowingMedia()
+    {
+        HideMedia();
+        ImageView.Source = null;
+        VideoPlayer.Source = null;
+        VlcPlayer.SourceProvider.Dispose();
+        var currentDirectory = new FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).DirectoryName;
+        var libDirectory = Path.Combine(currentDirectory, "libvlc");
+        VlcPlayer.SourceProvider.CreatePlayer(new DirectoryInfo(libDirectory));
+    }
+
+    private void HideMedia()
+    {
+        ImageView.Visibility = Visibility.Collapsed;
+        VideoPlayer.Visibility = Visibility.Collapsed;
+        VlcPlayer.Visibility = Visibility.Collapsed;
+        VlcPlayer.SourceProvider?.MediaPlayer?.Pause();
     }
     
     private void ShowMedia(string filePath)
@@ -137,11 +145,8 @@ public partial class MainWindow : Window
             mustEndInit = true;
         }
         
-        // Clear previous media
-        ImageView.Visibility = Visibility.Collapsed;
-        VideoPlayer.Visibility = Visibility.Collapsed;
-        VlcPlayer.Visibility = Visibility.Collapsed;
-        VlcPlayer.SourceProvider.MediaPlayer.Pause();
+        HideMedia();
+        
         
         
         filePath = Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media"), filePath);
@@ -191,26 +196,56 @@ public partial class MainWindow : Window
     }
     
     
-    private void SearchButton_Click(object sender, RoutedEventArgs e)
+    private void FilterButton_Click(object sender, RoutedEventArgs e)
     {
         var searchText = SearchTextBox.Text;
         MediaListBox.Items.Clear();
 
-        using (var connection = ManagementHelpers.GetAndOpenDatabaseConnection())
-        {
-            connection.Open();
-            var command = connection.CreateCommand();
-            command.CommandText = "SELECT FilePath FROM Media WHERE Tags LIKE @tags";
-            command.Parameters.AddWithValue("@tags", "%" + searchText + "%");
+        throw new NotImplementedException();
+    }
 
-            using (var reader = command.ExecuteReader())
+    private void DeleteMediaButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (MediaListBox.SelectedItem is MediaItem mediaItem)
+        {
+            if (ManagementHelpers.ShowConfirmationDialog($"Are you sure you want to delete '{mediaItem.Title}'"))
             {
-                while (reader.Read())
+                //Remove from listItem
+                MediaListBox.SelectedItem = null;
+                MediaListBox.Items.Remove(mediaItem);
+                //Remove from database
+                MediaRepository.DeleteMedia(mediaItem);
+                //Stop showing media
+                StopShowingMedia();
+                //Disable buttons
+                DeleteMediaButton.IsEnabled = false;
+                EditMediaButton.IsEnabled = false;
+                //Delete the files
+                try
                 {
-                    MediaListBox.Items.Add(reader["FilePath"].ToString());
+                    File.Delete(mediaItem.MediaFilePath);
+                    File.Delete(mediaItem.ThumbnailPath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to delete file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
     }
 
+    private void EditMediaButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (MediaListBox.SelectedItem is MediaItem mediaItem)
+        {
+            EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(mediaItem);
+            entryWindow.ShowDialog();
+            
+            //TODO update database entry
+
+            MediaRepository.UpdateMedia(mediaItem);
+
+            //TODO reload media list
+        }
+    }
 }
