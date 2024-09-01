@@ -21,13 +21,15 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        LoadAllMediaItems();
+        ReloadAllMediaItems();
         
         // Set the VLC library path
         var currentDirectory = new FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).DirectoryName;
         var libDirectory = Path.Combine(currentDirectory, "libvlc");
         VlcPlayer.SourceProvider.CreatePlayer(new DirectoryInfo(libDirectory));
     }
+
+    private MediaSearchFilter _filter = new SearchFilterOpen(new List<TagFilter>());
 
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
     {
@@ -108,10 +110,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private void LoadAllMediaItems()
+    public void ReloadAllMediaItems()
     {
         var mediaItems = MediaRepository.GetAllMediaItems();
-        foreach (var mediaItem in mediaItems)
+        
+        MediaListBox.Items.Clear();
+            
+        foreach (MediaItem mediaItem in mediaItems.Where(mediaItem => _filter.TestMedia(mediaItem)))
         {
             MediaListBox.Items.Add(mediaItem);
         }
@@ -198,16 +203,16 @@ public partial class MainWindow : Window
     
     private void FilterButton_Click(object sender, RoutedEventArgs e)
     {
-        var searchText = SearchTextBox.Text;
-        MediaListBox.Items.Clear();
-
-        throw new NotImplementedException();
+        FilterWindow filterWindow = new FilterWindow(this, _filter);
+        filterWindow.Show();
+        _filter = filterWindow.Filter;
+        
     }
 
     private void DeleteMediaButton_Click(object sender, RoutedEventArgs e)
     {
         if (MediaListBox.SelectedItem is MediaItem mediaItem)
-        {
+        { 
             if (ManagementHelpers.ShowConfirmationDialog($"Are you sure you want to delete '{mediaItem.Title}'"))
             {
                 //Remove from listItem
@@ -240,12 +245,10 @@ public partial class MainWindow : Window
         {
             EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(mediaItem);
             entryWindow.ShowDialog();
-            
-            //TODO update database entry
 
             MediaRepository.UpdateMedia(mediaItem);
 
-            //TODO reload media list
+            ReloadAllMediaItems();
         }
     }
 }

@@ -90,6 +90,11 @@ namespace Filterizer2
         
         public static List<TagItem> SearchTags(string searchString)
         {
+            if (searchString == "")
+            {
+                return GetTags();
+            }
+            
             var matchingTags = new List<TagItem>();
 
             using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();

@@ -23,13 +23,13 @@ namespace Filterizer2
         // Handles the filtering of tags as the user types
         private void TagFilterTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            string filterText = TagFilterTextBox.Text.ToLower();
-            var filteredTags = _allTags
-                .Where(tag => tag.Name.Contains(filterText, StringComparison.CurrentCultureIgnoreCase) || 
-                              tag.Aliases.Any(alias => alias.Contains(filterText, StringComparison.CurrentCultureIgnoreCase)))
-                .ToList();
+            UpdateTagList();
+        }
 
-            TagsListBox.ItemsSource = filteredTags;
+        private void UpdateTagList()
+        {
+            string filterText = TagFilterTextBox.Text.ToLower();
+            TagsListBox.ItemsSource = TagRepository.SearchTags(filterText);
         }
 
         // Handles the display of tag details when a tag is selected
@@ -76,16 +76,16 @@ namespace Filterizer2
                     TagRepository.DeleteTag(selectedTag);
                 }
             }
+            UpdateTagList();
         }
 
         private void EditTagButton_Click(object sender, RoutedEventArgs e)
         {
-            if (TagsListBox.SelectedItem is TagItem selectedTag)
-            {
-                var createTagWindow = new EditTagWindow(selectedTag);
-                createTagWindow.ShowDialog();
-                UpdateUI();
-            }
+            if (TagsListBox.SelectedItem is not TagItem selectedTag) return;
+            var createTagWindow = new EditTagWindow(selectedTag);
+            createTagWindow.ShowDialog();
+            UpdateUI();
+            UpdateTagList();
         }
 
         private void NewTagButton_Click(object sender, RoutedEventArgs e)
@@ -93,6 +93,7 @@ namespace Filterizer2
             var createTagWindow = new EditTagWindow();
             createTagWindow.ShowDialog();
             UpdateUI();
+            UpdateTagList();
         }
     }
 

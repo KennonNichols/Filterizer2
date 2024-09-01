@@ -10,10 +10,9 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10" Height="20">
-            <Button x:Name="LoadMediaButton" Content="Load Media" Width="100" Click="LoadMediaButton_Click"/>
-            <Button x:Name="SearchButton" Content="Search" Width="100" Margin="10,0,0,0" Click="FilterButton_Click"/>
-            <TextBox x:Name="SearchTextBox" Width="200" Margin="10,0,0,0" Text="Search by tags..."/>
-            <Button Content="Tag Dictionary" Click="OpenTagDictionaryButton_Click" Width="150" Height="20" Margin="10, 0, 0, 0"/>
+            <Button x:Name="LoadMediaButton" Content="Discover Media" Width="150" Click="LoadMediaButton_Click"/>
+            <Button x:Name="FilterButton" Content="Filter Media By Tags" Width="150" Margin="10,0,0,0" Click="FilterButton_Click"/>
+            <Button Content="Tag Dictionary" Click="OpenTagDictionaryButton_Click" Width="150" Margin="10, 0, 0, 0"/>
         </StackPanel>
 
         <Grid Grid.Row="1">

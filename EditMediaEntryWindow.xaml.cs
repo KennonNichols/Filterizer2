@@ -56,6 +56,11 @@ namespace Filterizer2
             DescriptionTextBox.Text = _editingMediaItem.Description;
             currentTags.AddRange(_editingMediaItem.Tags);
             
+            foreach (TagItem currentTag in currentTags)
+            {
+                CurrentTagsItemsControl.Items.Add(currentTag);
+            }
+             
             //Generate the thumbnail
             ThumbnailGenerator.GenerateOrGetThumbnail(_mediaFilePath);
         }
@@ -182,8 +187,7 @@ namespace Filterizer2
                 if (!currentTags.Contains(selectedTag))
                 {
                     currentTags.Add(selectedTag);
-                    CurrentTagsItemsControl.ItemsSource = null;
-                    CurrentTagsItemsControl.ItemsSource = currentTags;
+                    CurrentTagsItemsControl.Items.Add(selectedTag);
                 }
 
                 TagSearchTextBox.Text = string.Empty;
@@ -194,12 +198,9 @@ namespace Filterizer2
         // Handles removing a tag from the current tags list
         private void RemoveTagButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.CommandParameter is TagItem tagToRemove)
-            {
-                currentTags.Remove(tagToRemove);
-                CurrentTagsItemsControl.ItemsSource = null;
-                CurrentTagsItemsControl.ItemsSource = currentTags;
-            }
+            if (sender is not Button { CommandParameter: TagItem tagToRemove }) return;
+            currentTags.Remove(tagToRemove);
+            CurrentTagsItemsControl.Items.Remove(tagToRemove);
         }
 
         // Ensure currentTags are accessible when saving
