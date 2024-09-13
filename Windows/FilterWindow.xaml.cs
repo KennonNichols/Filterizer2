@@ -1,17 +1,14 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
-namespace Filterizer2
+namespace Filterizer2.Windows
 {
-    public partial class FilterWindow : Window
+    public partial class FilterWindow
     {
-        private List<TagItem> _allTags = new List<TagItem>();
-
-        public MediaSearchFilter Filter;
-        private MainWindow parent;
+        public readonly MediaSearchFilter Filter;
+        private readonly IHasFilter _parent;
         
-        public FilterWindow(MainWindow mainWindow, MediaSearchFilter? filter = null)
+        public FilterWindow(IHasFilter mainWindow, MediaSearchFilter? filter = null)
         {
             InitializeComponent();
 
@@ -20,7 +17,7 @@ namespace Filterizer2
                 filter = new MediaSearchFilter(new List<TagFilter>());
             }
 
-            parent = mainWindow;
+            _parent = mainWindow;
             Filter = filter;
             
             UpdateFilters();
@@ -30,7 +27,8 @@ namespace Filterizer2
         {
             base.OnClosed(e);
             
-            parent.ReloadAllMediaItems();
+            _parent.SetFilter(Filter);
+            _parent.ReloadAllMediaItems();
         }
 
         // Handles the filtering of tags as the user types
@@ -50,10 +48,10 @@ namespace Filterizer2
         // Handles the display of tag details when a tag is selected
         private void TagsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            UpdateUI();
+            UpdateUi();
         }
 
-        private void UpdateUI()
+        private void UpdateUi()
         {
             if (TagsListBox.SelectedItem is TagItem selectedTag)
             {

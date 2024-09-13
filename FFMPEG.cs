@@ -6,7 +6,7 @@ namespace Filterizer2
     {
         Process ffmpeg;
 
-        private void Exec(string input, string output, string arguments)
+        private void Exec(string? input, string? output, string arguments)
         {
             ffmpeg = new Process();
 
@@ -23,7 +23,7 @@ namespace Filterizer2
         }
 
 
-        public void GetThumbnail(string videoPath, string thumbnailPath)
+        public void GetThumbnail(string? videoPath, string? thumbnailPath)
         {
             Exec(videoPath, thumbnailPath, "-s 64x64");
         }

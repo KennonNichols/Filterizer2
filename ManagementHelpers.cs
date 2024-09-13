@@ -50,10 +50,10 @@ namespace Filterizer2
                 connection.Open();
 
                 // If the database doesn't exist, create it
-                if (dbExists && CheckedThisLaunch) return connection;
+                if (dbExists && _checkedThisLaunch) return connection;
                 
                 createDatabase.Invoke();
-                CheckedThisLaunch = true;
+                _checkedThisLaunch = true;
                 
                 return connection;
             }
@@ -64,7 +64,7 @@ namespace Filterizer2
             }
         }
 
-        private static bool CheckedThisLaunch = false;
+        private static bool _checkedThisLaunch;
 
         /// <summary>
         /// Creates the Media database with the required schema.
@@ -91,6 +91,12 @@ namespace Filterizer2
                         Description TEXT
                     );",
                          @"
+                    CREATE TABLE IF NOT EXISTS Album (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Name TEXT NOT NULL,
+                        Description TEXT
+                    );",
+                         @"
                     CREATE TABLE IF NOT EXISTS MediaTags (
                         MediaId INTEGER NOT NULL,
                         TagId INTEGER NOT NULL,
@@ -104,6 +110,13 @@ namespace Filterizer2
                         TagId INTEGER NOT NULL,
                         Alias TEXT NOT NULL,
                         FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE
+                    );", @"
+                    CREATE TABLE IF NOT EXISTS AlbumMedia (
+                        AlbumId INTEGER NOT NULL,
+                        MediaId INTEGER NOT NULL,
+                        PRIMARY KEY (AlbumId, MediaId),
+                        FOREIGN KEY (AlbumId) REFERENCES Album(Id) ON DELETE CASCADE,
+                        FOREIGN KEY (MediaId) REFERENCES Media(Id) ON DELETE CASCADE
                     );"
                      })
             {

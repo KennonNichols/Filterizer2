@@ -2,9 +2,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace Filterizer2
+namespace Filterizer2.Windows
 {
-    public partial class TagDictionaryWindow : Window
+    public partial class TagDictionaryWindow
     {
         private List<TagItem> _allTags = new List<TagItem>();
 
@@ -35,10 +35,10 @@ namespace Filterizer2
         // Handles the display of tag details when a tag is selected
         private void TagsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            UpdateUI();
+            UpdateUi();
         }
 
-        private void UpdateUI()
+        private void UpdateUi()
         {
             if (TagsListBox.SelectedItem is TagItem selectedTag)
             {
@@ -84,7 +84,7 @@ namespace Filterizer2
             if (TagsListBox.SelectedItem is not TagItem selectedTag) return;
             var createTagWindow = new EditTagWindow(selectedTag);
             createTagWindow.ShowDialog();
-            UpdateUI();
+            UpdateUi();
             UpdateTagList();
         }
 
@@ -92,7 +92,7 @@ namespace Filterizer2
         {
             var createTagWindow = new EditTagWindow();
             createTagWindow.ShowDialog();
-            UpdateUI();
+            UpdateUi();
             UpdateTagList();
         }
     }

@@ -3,6 +3,7 @@ using System.Data.SQLite;
 
 namespace Filterizer2
 {
+    
     public static class TagRepository
     {
         private const string CreateTagQuery = """

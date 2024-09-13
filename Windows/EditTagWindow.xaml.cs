@@ -1,11 +1,10 @@
-using System.Data.SQLite;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace Filterizer2
+namespace Filterizer2.Windows
 {
-    public partial class EditTagWindow : Window
+    public partial class EditTagWindow
     {
         private List<string> Aliases { get; } = new List<string>();
 
@@ -112,12 +111,10 @@ namespace Filterizer2
         
         private void AddAlias_Click(object sender, RoutedEventArgs e)
         {
-            var alias = Microsoft.VisualBasic.Interaction.InputBox("Enter a new alias:", "Add Alias", "");
-            if (!string.IsNullOrWhiteSpace(alias) && !Aliases.Contains(alias))
-            {
-                Aliases.Add(alias);
-                AliasesListBox.Items.Add(alias);
-            }
+            var alias = Microsoft.VisualBasic.Interaction.InputBox("Enter a new alias:", "Add Alias");
+            if (string.IsNullOrWhiteSpace(alias) || Aliases.Contains(alias)) return;
+            Aliases.Add(alias);
+            AliasesListBox.Items.Add(alias);
         }
 
         private void RemoveAlias_Click(object sender, RoutedEventArgs e)

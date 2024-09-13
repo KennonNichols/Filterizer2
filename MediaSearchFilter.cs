@@ -12,16 +12,16 @@ namespace Filterizer2
             Filters = filters;
         }
         
-        public virtual bool TestMedia(MediaItem mediaItem)
+        public virtual bool TestMedia(IMediaDisplayItem mediaItem)
         {
             //Returns true if every filter contains at least one tag that the filter wants
-            return Filters.All(filter => mediaItem.Tags.Any(tag => filter.Tags.Any(item => item.Id == tag.Id)));
+            return Filters.All(filter => mediaItem.TagsForFiltering.Any(tag => filter.Tags.Any(item => item.Id == tag.Id)));
         }
     }
 
     public class SearchFilterOpen(List<TagFilter> filters) : MediaSearchFilter(filters)
     {
-        public override bool TestMedia(MediaItem mediaItem) => true;
+        public override bool TestMedia(IMediaDisplayItem mediaItem) => true;
     }
 
 

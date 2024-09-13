@@ -8,11 +8,11 @@ namespace Filterizer2
 {
     public class ThumbnailGenerator
     {
-        public static string GenerateOrGetThumbnail(string mediaFilePath)
+        public static string? GenerateOrGetThumbnail(string? mediaFilePath)
         {
             string fileName = Path.GetFileName(mediaFilePath);
             //Save all as jpg
-            string thumbnailPath = Path.ChangeExtension(Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs"), fileName), ".jpg");
+            string? thumbnailPath = Path.ChangeExtension(Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs"), fileName), ".jpg");
 
             
             if (File.Exists(thumbnailPath))
@@ -51,14 +51,14 @@ namespace Filterizer2
             return thumbnailPath;
         }
 
-        private static void GenerateImageThumbnail(string imagePath, string thumbnailPath)
+        private static void GenerateImageThumbnail(string? imagePath, string? thumbnailPath)
         {
             using var image = new Bitmap(imagePath);
             var thumbnail = image.GetThumbnailImage(64, 64, () => false, IntPtr.Zero);
             thumbnail.Save(thumbnailPath, ImageFormat.Jpeg);
         }
 
-        private static void GenerateVideoOrGifThumbnail(string mediaPath, string thumbnailPath)
+        private static void GenerateVideoOrGifThumbnail(string? mediaPath, string? thumbnailPath)
         {
             new FFMPEG().GetThumbnail(mediaPath, thumbnailPath);
         }

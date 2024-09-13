@@ -2,18 +2,17 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using XamlAnimatedGif;
 
-namespace Filterizer2
+namespace Filterizer2.Windows
 {
-    public partial class EditMediaEntryWindow : Window
+    public partial class EditMediaEntryWindow
     {
         public string MediaTitle => TitleTextBox.Text;
         public string MediaDescription => DescriptionTextBox.Text;
 
-        private readonly string _mediaFilePath;
+        private readonly string? _mediaFilePath;
         private readonly MediaItem _editingMediaItem;
         
         private bool _isEditMode;
@@ -28,7 +27,7 @@ namespace Filterizer2
             SetUp();
         }
         
-        public EditMediaEntryWindow(string mediaFilePath)
+        public EditMediaEntryWindow(string? mediaFilePath)
         {
             _editingMediaItem = new MediaItem()
             {
@@ -82,30 +81,13 @@ namespace Filterizer2
             _editingMediaItem.Tags = currentTags;
             _editingMediaItem.LocalFilename = Path.GetFileName(_mediaFilePath);
             base.OnClosed(e);
+            
+            
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
-            Close();
-        }
-
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (VideoPlayer != null)
-            {
-                VideoPlayer.Source = null;
-            }
-            if (VlcPlayer != null)
-            {
-                VlcPlayer.Content = null;
-            }
-            if (ImageView != null)
-            {
-                ImageView.Source = null;
-            }
-            
-            DialogResult = false;
             Close();
         }
         
