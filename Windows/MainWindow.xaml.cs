@@ -236,7 +236,6 @@ namespace Filterizer2.Windows
         {
             HideMedia();
             ImageView.Source = null;
-            VideoPlayer.Source = null;
             VlcPlayer.SourceProvider.Dispose();
             var libDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libvlc");
             VlcPlayer.SourceProvider.CreatePlayer(new DirectoryInfo(libDirectory));
@@ -245,10 +244,10 @@ namespace Filterizer2.Windows
         private void HideMedia()
         {
             ImageView.Visibility = Visibility.Collapsed;
-            VideoPlayer.Visibility = Visibility.Collapsed;
             VlcPlayer.Visibility = Visibility.Collapsed;
-            VlcPlayer.SourceProvider?.MediaPlayer?.Pause();
             ControlTray.Visibility = Visibility.Collapsed;
+            VlcPlayer.SourceProvider?.MediaPlayer?.Pause();
+            CurrentPlayer.Audio.IsMute = true;
         }
     
         private void ShowMedia(string filePath)
@@ -291,6 +290,7 @@ namespace Filterizer2.Windows
                     CurrentPlayer.Play(new Uri(filePath));
                     VlcPlayer.Visibility = Visibility.Visible;
                     ControlTray.Visibility = Visibility.Visible;
+                    CurrentPlayer.Audio.IsMute = false;
                     break;
                 default:
                     MessageBox.Show("Unsupported media format", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -418,7 +418,6 @@ namespace Filterizer2.Windows
         
         private void Timer_Tick(object? sender, EventArgs e)
         {
-            
             if (CurrentPlayer.Length <= 0) return;
             
             // Update the slider

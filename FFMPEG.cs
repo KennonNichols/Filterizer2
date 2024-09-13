@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace Filterizer2
 {
-    public class FFMPEG
+    public class Ffmpeg
     {
         Process ffmpeg;
 

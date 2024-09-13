@@ -58,14 +58,13 @@
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="250"/>
                 </Grid.RowDefinitions>
                 
                 <Border Grid.Row="0" x:Name="ViewingWindow" BorderBrush="LightGray" BorderThickness="1" MinHeight="350">
                     <Grid>
                         <wpf:VlcControl x:Name="VlcPlayer" Visibility="Collapsed" />
                         <Image x:Name="ImageView" Visibility="Collapsed"/>
-                        <MediaElement x:Name="VideoPlayer" Visibility="Collapsed"/>
                     </Grid>
                 </Border>
                 

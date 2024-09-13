@@ -60,7 +60,7 @@ namespace Filterizer2
 
         private static void GenerateVideoOrGifThumbnail(string? mediaPath, string? thumbnailPath)
         {
-            new FFMPEG().GetThumbnail(mediaPath, thumbnailPath);
+            new Ffmpeg().GetThumbnail(mediaPath, thumbnailPath);
         }
 
         private static Bitmap ResizeImage(Bitmap imgToResize, int width, int height)
