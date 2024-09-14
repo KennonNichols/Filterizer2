@@ -15,9 +15,13 @@ namespace Filterizer2.Repositories
 		{
 			HashSet<TagItem> allTags = new HashSet<TagItem>();
 
-			foreach (var tag in MediaItems.SelectMany(mediaItem => mediaItem.Tags))
+			foreach (var mediaItem in MediaItems.OfType<MediaItem>())
 			{
-				allTags.Add(tag);
+				if (mediaItem.Tags == null) continue;
+				foreach (TagItem tag in mediaItem.Tags)
+				{
+					allTags.Add(tag);
+				}
 			}
 
 			return allTags;

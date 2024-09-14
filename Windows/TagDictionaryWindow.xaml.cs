@@ -49,7 +49,7 @@ namespace Filterizer2.Windows
                     : "No Aliases";
 
                 // Set the border color based on the TagType
-                TagDetailsBorder.BorderBrush = new SolidColorBrush(selectedTag.Category.GetColor());
+                TagDetailsBorder.BorderBrush = new SolidColorBrush(selectedTag.Category.Color);
 
                 DeleteTagButton.IsEnabled = true;
                 EditTagButton.IsEnabled = true;

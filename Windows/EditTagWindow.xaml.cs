@@ -16,8 +16,7 @@ namespace Filterizer2.Windows
 
             _editingTag = tagItem;
             
-            // Populate the ComboBox with TagType enum values
-            TagTypeComboBox.ItemsSource = Enum.GetValues(typeof(TagCategory)).Cast<TagCategory>();
+            TagTypeComboBox.ItemsSource = Tags.GetAllValues();
             TagTypeComboBox.SelectedIndex = 0; // Select the first item by default
 
             // Set the initial colors and description based on the default selection
@@ -57,8 +56,8 @@ namespace Filterizer2.Windows
         private void UpdateUiForSelectedTagType(TagCategory tagType)
         {
             // Get the color, title, and description for the selected TagType
-            var color = tagType.GetColor();
-            var description = tagType.GetDescription();
+            var color = tagType.Color;
+            var description = tagType.Description;
 
             // Update the border colors
             MainBorder.BorderBrush = new SolidColorBrush(color);

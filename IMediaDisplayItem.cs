@@ -7,5 +7,7 @@ namespace Filterizer2
 		IEnumerable<TagItem> TagsForFiltering { get; }
 		
 		string? GetMediaPath { get; }
+		
+		int Id { get; }
 	}
 }

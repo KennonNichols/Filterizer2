@@ -30,7 +30,7 @@ namespace Filterizer2
             var command = connection.CreateCommand();
             command.CommandText = CreateTagQuery;
             command.Parameters.AddWithValue("@name", tag.Name);
-            command.Parameters.AddWithValue("@category", (int)tag.Category);
+            command.Parameters.AddWithValue("@category", tag.Category.Title);
             command.Parameters.AddWithValue("@description", tag.Description);
             command.ExecuteNonQuery();
 
@@ -65,7 +65,7 @@ namespace Filterizer2
                 {
                     Id = reader.GetInt32(0),
                     Name = reader.GetString(1),
-                    Category = (TagCategory)reader.GetInt32(2),
+                    Category = Tags.GetCategoryOfName(reader.GetString(2)),
                     Description = reader.GetString(3)
                 };
 
@@ -137,7 +137,7 @@ namespace Filterizer2
                     {
                         Id = tagId,
                         Name = reader.GetString(1),
-                        Category = (TagCategory)reader.GetInt32(2),
+                        Category = Tags.GetCategoryOfName(reader.GetString(2)),
                         Description = reader.GetString(3),
                         Aliases = new List<string>()
                     };
@@ -166,7 +166,7 @@ namespace Filterizer2
             {
                 updateTagCommand.Parameters.AddWithValue("@Name", editingTag.Name);
                 updateTagCommand.Parameters.AddWithValue("@Description", editingTag.Description);
-                updateTagCommand.Parameters.AddWithValue("@Category", (int)editingTag.Category);
+                updateTagCommand.Parameters.AddWithValue("@Category", editingTag.Category.Title);
                 updateTagCommand.Parameters.AddWithValue("@Id", editingTag.Id);
                 
                 updateTagCommand.ExecuteNonQuery();

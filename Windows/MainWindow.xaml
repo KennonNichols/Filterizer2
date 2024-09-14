@@ -40,11 +40,28 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10" Height="20">
-            <Button x:Name="LoadMediaButton" Content="Discover Media" Width="150" Click="LoadMediaButton_Click"/>
-            <Button x:Name="CreateAlbumButton" Content="Create Album" Width="150" Margin="10,0,0,0" Click="CreateAlbumButton_Click"/>
-            <Button x:Name="FilterButton" Content="Filter Media By Tags" Width="150" Margin="10,0,0,0" Click="FilterButton_Click"/>
-            <Button x:Name="ViewDictionaryButton" Content="Tag Dictionary" Click="OpenTagDictionaryButton_Click" Width="150" Margin="10, 0, 0, 0"/>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="10" Height="30">
+            <Button x:Name="LoadMediaButton" Content="Discover Media" Width="100" Click="LoadMediaButton_Click"/>
+            <Button x:Name="CreateAlbumButton" Content="Create Album" Width="100" Margin="10,0,0,0" Click="CreateAlbumButton_Click"/>
+            <Button x:Name="FilterButton" Content="Filter By Tags" Width="100" Margin="10,0,0,0" Click="FilterButton_Click"/>
+            <Button x:Name="ViewDictionaryButton" Content="Tag Dictionary" Click="OpenTagDictionaryButton_Click" Width="100" Margin="10, 0, 0, 0"/>
+            <StackPanel Orientation="Vertical" Margin="10,0,0,0">
+                <StackPanel Orientation="Horizontal" Height="15">
+                    <ToggleButton Height="10" Width="10" IsChecked="True" x:Name="ShowMediaCheckbox" Click="VisibilityButtonChecked"/>
+                    <TextBlock Margin="10,0,0,0">Show media</TextBlock>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Height="15">
+                    <ToggleButton Height="10" Width="10" x:Name="ShowAlbumsCheckbox" Click="VisibilityButtonChecked"/>
+                    <TextBlock Margin="10,0,0,0">Show albums</TextBlock>
+                </StackPanel>
+            </StackPanel>
+            <ComboBox x:Name="SorterSelectorBox" Width="130" Height="25" SelectionChanged="SorterSelectorBox_SelectionChanged" Margin="10,0, 0,0">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Label}"></TextBlock>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </StackPanel>
 
         <Grid Grid.Row="1">

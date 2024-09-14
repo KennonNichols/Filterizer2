@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TagCategories>
+    <li>
+        <Name>Example category</Name>
+        <Description>This is a description. Edit TagCategoriesEditable.xml to create your own tag categories.</Description>
+        <Color>0, 255, 128</Color>
+    </li>
+    <li>
+        <Name>Other category</Name>
+        <Description>This is a second example category.</Description>
+        <Color>0, 0, 128</Color>
+    </li>
+</TagCategories>

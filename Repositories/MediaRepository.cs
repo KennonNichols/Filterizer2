@@ -72,7 +72,7 @@ namespace Filterizer2
                 {
                     Id = Convert.ToInt32(reader["Id"]),
                     Name = reader["Name"].ToString(),
-                    Category = (TagCategory)Convert.ToInt32(reader["Category"]),
+                    Category = Tags.GetCategoryOfName(reader["Category"].ToString()),
                     Description = reader["Description"].ToString()
                 };
                 tags.Add(tag);

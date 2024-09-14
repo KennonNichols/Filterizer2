@@ -8,10 +8,7 @@ namespace Filterizer2.Windows
 	{
         private AlbumItem _albumItem;
         private bool _isEditMode;
-        
-        
-        
-
+        private MediaSorter Sorter = new UnsortedSorter();
         public MediaSearchFilter Filter { get; private set; } = new SearchFilterOpen(new List<TagFilter>());
         public void SetFilter(MediaSearchFilter filter)
         {
@@ -22,6 +19,9 @@ namespace Filterizer2.Windows
         public EditAlbumWindow(AlbumItem? albumItem = null)
         {
             InitializeComponent();
+
+            SorterSelectorBox.ItemsSource = MediaSorter.Sorters;
+            SorterSelectorBox.SelectedIndex = 0;
 
             if (albumItem != null)
             {
@@ -50,10 +50,15 @@ namespace Filterizer2.Windows
         public void ReloadAllMediaItems()
         {
             List<MediaItem> displayItems = MediaRepository.GetAllMediaItems();
-	
+            
+            
+            displayItems = displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
+            
+            displayItems.Sort(Sorter);
+            
             MediaListBox.Items.Clear();
-	
-            foreach (MediaItem mediaItem in displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)))
+            
+            foreach (MediaItem mediaItem in displayItems)
             {
                 MediaListBox.Items.Add(mediaItem);
             }
@@ -123,5 +128,12 @@ namespace Filterizer2.Windows
                 }
             }
         }
-	}
+
+        private void SorterSelectorBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SorterSelectorBox.SelectedItem is not MediaSorter mediaSorter) return;
+            Sorter = mediaSorter;
+            ReloadAllMediaItems();
+        }
+    }
 }

@@ -25,9 +25,18 @@ namespace Filterizer2.Windows
         
         public MainWindow()
         {
+            
+            
+            
+            
+            
+            
             DeleteOrphans();
             InitializeComponent();
             ReloadAllMediaItems();
+
+            SorterSelectorBox.ItemsSource = MediaSorter.Sorters;
+            SorterSelectorBox.SelectedIndex = 0;
             
             //Initialize timer
             _timer = new DispatcherTimer
@@ -51,6 +60,16 @@ namespace Filterizer2.Windows
             string mediaDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media");
             string thumbsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs");
 
+            if (!Directory.Exists(mediaDirectory))
+            {
+                Directory.CreateDirectory(mediaDirectory);
+            }
+            if (!Directory.Exists(thumbsDirectory))
+            {
+                Directory.CreateDirectory(thumbsDirectory);
+            }
+
+            
             string[] allRealMediaItems = MediaRepository.GetAllMediaItems().Select(item => Path.GetFileNameWithoutExtension(item.LocalFilename)).ToArray();
         
         
@@ -211,21 +230,32 @@ namespace Filterizer2.Windows
         public void ReloadAllMediaItems()
         {
             List<IMediaDisplayItem> displayItems = new List<IMediaDisplayItem>();
+
+            if (ShowMediaCheckbox.IsChecked == true)
+            {
+                displayItems.AddRange(MediaRepository.GetAllMediaItems());
+            }
+            if (ShowAlbumsCheckbox.IsChecked == true)
+            {
+                displayItems.AddRange(AlbumRepository.GetAlbums());
+            }
+
+            displayItems = displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
             
-            displayItems.AddRange(MediaRepository.GetAllMediaItems());
-            displayItems.AddRange(AlbumRepository.GetAlbums());
+            displayItems.Sort(Sorter);
             
             MediaListBox.Items.Clear();
             
-            foreach (IMediaDisplayItem mediaItem in displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)))
+            foreach (IMediaDisplayItem mediaItem in displayItems)
             {
-                //TODO sort here
                 MediaListBox.Items.Add(mediaItem);
             }
         }
 
         private VlcMediaPlayer CurrentPlayer => VlcPlayer.SourceProvider.MediaPlayer;
 
+        private MediaSorter Sorter = new UnsortedSorter();
+        
         public MediaSearchFilter Filter { get; private set; } = new SearchFilterOpen(new List<TagFilter>());
         public void SetFilter(MediaSearchFilter filter)
         {
@@ -315,6 +345,18 @@ namespace Filterizer2.Windows
         private void FilterButton_Click(object sender, RoutedEventArgs e)
         {
             new FilterWindow(this, Filter).ShowDialog();
+        }
+        
+        private void VisibilityButtonChecked(object sender, RoutedEventArgs e)
+        {
+            ReloadAllMediaItems();
+        }
+
+        private void SorterSelectorBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SorterSelectorBox.SelectedItem is not MediaSorter mediaSorter) return;
+            Sorter = mediaSorter;
+            ReloadAllMediaItems();
         }
 
         private void DeleteMediaButton_Click(object sender, RoutedEventArgs e)

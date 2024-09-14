@@ -87,7 +87,7 @@ namespace Filterizer2
                     CREATE TABLE IF NOT EXISTS Tags (
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         Name TEXT NOT NULL,
-                        Category INTEGER,
+                        Category TEXT,
                         Description TEXT
                     );",
                          @"

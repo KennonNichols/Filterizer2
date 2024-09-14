@@ -15,7 +15,7 @@
 
                 <TextBlock Text="Tag Type:" Margin="0,0,0,5"/>
                 <StackPanel Orientation="Horizontal">
-                    <ComboBox x:Name="TagTypeComboBox" Width="150" SelectionChanged="TagTypeComboBox_SelectionChanged" Margin="0,0,10,0"/>
+                    <ComboBox x:Name="TagTypeComboBox" Width="150" Height="25" SelectionChanged="TagTypeComboBox_SelectionChanged" Margin="0,0,10,0"/>
                     <TextBlock x:Name="TagDescriptionTextBlock" Width="180" TextWrapping="Wrap" VerticalAlignment="Center"/>
                 </StackPanel>
 
