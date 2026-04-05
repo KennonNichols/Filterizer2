@@ -41,9 +41,9 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <Button Click="DeleteFilter" Tag="{Binding Path=.}" Content="x" Margin="0,0,10,0" />
-                                <Button Click="InvertFilter" Tag="{Binding Path=.}" Content="-+" Margin="0,0,10,0" />
-                                <TextBlock Padding="1 " Text="{Binding Summary}" Background="{Binding BGColor}" Foreground="{Binding FGColor}"/>
+                                <Button Click="DeleteFilter" Tag="{Binding Path=.}" ToolTip="Click to remove this specific tag from the filter." Content="x" Margin="0,0,10,0" />
+                                <Button Click="InvertFilter" Tag="{Binding Path=.}" ToolTip="Click to invert tag filtering logic. White background = whitelist, black background = blacklist." Content="-+" Margin="0,0,10,0" />
+                                <TextBlock Padding="1" Text="{Binding Summary}" Background="{Binding BGColor}" Foreground="{Binding FGColor}"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

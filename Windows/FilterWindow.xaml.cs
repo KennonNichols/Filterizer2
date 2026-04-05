@@ -66,9 +66,11 @@ namespace Filterizer2.Windows
         private void TagSelection(object sender, RoutedEventArgs e)
         {
             if (FilterListBox.SelectedItem is not TagFilter filter) return;
+
+            bool isFresh = filter.IsEmpty;
             
             //If this is a fresh filter, add it to the main filter
-            if (filter.IsEmpty)
+            if (isFresh)
             {
                 Filter.Filters.Add(filter);
             }
@@ -76,7 +78,8 @@ namespace Filterizer2.Windows
             TagItem tag = (TagItem)((Button)sender).Tag;
             filter.AddTag(tag);  
                 
-            UpdateFilters();
+            //if this wasn't a fresh filter, we mark that it is an edit filter operation
+            UpdateFilters(!isFresh);
         }
 
         private void DeleteFilter(object sender, RoutedEventArgs e)
@@ -92,17 +95,29 @@ namespace Filterizer2.Windows
 	        TagFilter filter = ((TagFilter)((Button)sender).Tag);
 	        filter.Inverted = !filter.Inverted;
 	        
-	        UpdateFilters();
+	        UpdateFilters(true);
         }
 
-        private void UpdateFilters()
+        private void UpdateFilters(bool editingExistingFilter = false)
         {
+	        int index = FilterListBox.SelectedIndex;
             FilterListBox.Items.Clear();
             foreach (TagFilter filter in Filter.Filters)
             {
                 FilterListBox.Items.Add(filter);
             }
             FilterListBox.Items.Add(new TagFilter(new HashSet<TagItem>()));
+
+            //If we were tweaking a filter, reselect the one the user was working on
+            if (editingExistingFilter)
+            {
+	            FilterListBox.SelectedIndex = index;
+            }
+            //Otherwise, select the newly made filter
+            else
+            {
+	            FilterListBox.SelectedIndex = FilterListBox.Items.Count - 1;
+            }
         }
 
     }

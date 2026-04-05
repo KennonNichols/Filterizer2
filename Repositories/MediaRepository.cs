@@ -18,6 +18,11 @@ namespace Filterizer2
                                            """;
         
         
+        /// <summary>
+        /// This should be the one and only place where MediaItems are stored in memory.
+        /// </summary>
+        private static Dictionary<int, MediaItem> _mediaCache = new Dictionary<int, MediaItem>();
+        
         
         public static IEnumerable<MediaItem> GetAllMediaItems()
         {
@@ -30,19 +35,56 @@ namespace Filterizer2
                 {
                     while (reader.Read())
                     {
-                        var mediaItem = new MediaItem
-                        {
-                            Id = Convert.ToInt32(reader["Id"]),
-                            LocalFilename = reader["LocalFilename"].ToString(),
-                            Title = reader["Title"].ToString(),
-                            Description = reader["Description"].ToString()
-                        };
-                        
-                        mediaItem.SetTags(GetTagsForMediaItem(mediaItem.Id, connection));
-                        yield return mediaItem;
+                        yield return ReadRowAsMedia(reader, connection);
                     }
                 }
             }
+        }
+        
+        public static bool TryGetMediaById(int mediaId, out MediaItem mediaItem)
+        {
+	        //Try immediately grabbing from cache instead of requerying the database
+	        if (_mediaCache.TryGetValue(mediaId, out mediaItem!))
+	        {
+		        return true;
+	        }
+	        
+	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
+	        var command = connection.CreateCommand();
+	        command.CommandText = "SELECT * FROM Media WHERE Id = @mediaId";
+	        command.Parameters.AddWithValue("@mediaId", mediaId);
+	        using var reader = command.ExecuteReader();
+	        if (reader.Read())
+	        {
+		        mediaItem = ReadRowAsMedia(reader, connection);
+		        _mediaCache.Add(mediaId, mediaItem);
+		        return true;
+	        }
+
+	        mediaItem = null!;
+	        return false;
+        }
+        
+        /// <summary>
+        /// Given an SQL reader and connection, read a row of the SQL query as a piece of media.
+        /// 
+        /// It is expected that it is currently on the row (so Reader.Read() should likely be called before this)
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="connection"></param>
+        /// <returns></returns>
+        private static MediaItem ReadRowAsMedia(SQLiteDataReader reader, SQLiteConnection connection)
+        {
+	        var media = new MediaItem()
+	        {
+		        Id = Convert.ToInt32(reader["Id"]),
+		        LocalFilename = reader["LocalFilename"].ToString(),
+		        Title = reader["Title"].ToString(),
+		        Description = reader["Description"].ToString()
+	        };
+
+	        media.SetTags(GetTagsForMediaItem(media.Id, connection));
+	        return media;
         }
 
         private static List<TagItem> GetTagsForMediaItem(int mediaId, SQLiteConnection connection)
@@ -117,6 +159,8 @@ namespace Filterizer2
             command2.ExecuteNonQuery();
             
             transaction.Commit();
+
+            _mediaCache.Remove(mediaItem.Id);
         }
 
         public static void UpdateMedia(MediaItem mediaItem)
@@ -157,6 +201,9 @@ namespace Filterizer2
             }
             // Commit transaction after all operations are successful
             transaction.Commit();
+
+            // Remove from cache
+            _mediaCache.Remove(mediaItem.Id);
         }
     }
 }

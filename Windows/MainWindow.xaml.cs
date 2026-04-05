@@ -112,11 +112,14 @@ namespace Filterizer2.Windows
             var openFileDialog = new OpenFileDialog
             {
                 Filter = "Media Files|*.png;*.jpg;*.gif;*.webp;*.webm;*.mp4",
-                Multiselect = false
+                Multiselect = true
             };
+            
+            
 
             if (openFileDialog.ShowDialog() != true) return;
-            string sourceFilePath = openFileDialog.FileName;
+
+            string[] fileNames = openFileDialog.FileNames;
             string destinationFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media");
             string thumbsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs");
 
@@ -130,39 +133,79 @@ namespace Filterizer2.Windows
                 Directory.CreateDirectory(thumbsDirectory);
             }
 
-            
-            // Copy the media file
-            string? localFilePath = ManagementHelpers.CopyMediaToLocalFolder(sourceFilePath, destinationFolder);
+            bool deleteMode = ManagementHelpers.ShowConfirmationDialog("Delete the original?");
 
-            if (ManagementHelpers.ShowConfirmationDialog("Delete the original?"))
+            bool singleMode = fileNames.Length == 1;
+
+            TagItem? WIPTag = null;
+
+            if (!singleMode)
             {
-                try
-                {
-                    File.Delete(sourceFilePath);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to delete orphaned file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+	            WIPTag = TagRepository.SearchTags("Tagging_In_Progress").FirstOrDefault();
             }
 
-            if (localFilePath == null) return;
-            // Generate or retrieve the thumbnail
-            ThumbnailGenerator.GenerateOrGetThumbnail(localFilePath);
+            List<MediaItem> addedItems = new List<MediaItem>();
             
-                
-            // Open the NewMediaEntryWindow to get user input
-            EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(localFilePath);
-            entryWindow.ShowDialog();
+            foreach (string sourceFilePath in fileNames)
+            {
+	            // Copy the media file
+	            string? localFilePath = ManagementHelpers.CopyMediaToLocalFolder(sourceFilePath, destinationFolder);
 
-            // Create the MediaItem with user-provided details
-            MediaItem item = entryWindow.GetMediaItem();
+	            if (deleteMode)
+	            {
+		            try
+		            {
+			            File.Delete(sourceFilePath);
+		            }
+		            catch (Exception ex)
+		            {
+			            MessageBox.Show($"Failed to delete orphaned file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+		            }
+	            }
 
-            // Store media in database
-            MediaRepository.AddMedia(item);
+	            if (localFilePath == null) return;
+	            // Generate or retrieve the thumbnail
+	            ThumbnailGenerator.GenerateOrGetThumbnail(localFilePath);
 
-            // Add to MediaListBox
-            MediaListBox.Items.Add(item);
+	            MediaItem item;
+	            
+	            if (singleMode)
+	            {
+		            // Open the NewMediaEntryWindow to get user input, only if it's a single item
+		            EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(localFilePath);
+		            entryWindow.ShowDialog();
+		            
+		            // Create the MediaItem with user-provided details
+		            item = entryWindow.GetMediaItem();
+	            }
+	            else
+	            {
+		            // Create an empty MediaItem, and add the "tagging in progress" tag
+		            item = new MediaItem
+		            {
+			            Title = "",
+			            Description = "",
+			            LocalFilename = Path.GetFileName(localFilePath)
+		            };
+		            if (WIPTag != null) item.AddTag(WIPTag);
+	            }
+
+	            addedItems.Add(item);
+
+	            // Store media in database
+	            MediaRepository.AddMedia(item);
+
+	            // Add to MediaListBox
+	            MediaListBox.Items.Add(item);
+            }
+            
+            
+            if (!singleMode)
+            {
+	            new EditAlbumWindow(null, addedItems).ShowDialog();
+            
+	            ReloadAllMediaItems();
+            }
         }
     
         private void MediaListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -172,9 +215,12 @@ namespace Filterizer2.Windows
                 case MediaItem mediaItem:
                     ShowMedia(mediaItem.LocalFilename);
                     SetMediaTray();
+                    SetHiddenAlbumTray();
                     break;
                 case AlbumItem albumItem:
                     ShowAlbum(albumItem);
+                    SetHiddenMediaTray();
+                    SetAlbumTray();
                     break;
                 default:
                     StopShowingMedia();
@@ -189,18 +235,12 @@ namespace Filterizer2.Windows
             if (sel != null)
             {
                 ShowMedia(sel.LocalFilename);
-                SetAlbumTray();
                 SyncAlbumButtons(albumItem);
-            }
-            else
-            {
-                SetHiddenAlbumTray();
             }
         }
 
         private void SetAlbumTray()
         {
-            // MediaTray.Visibility = Visibility.Collapsed;
             AlbumTray.Visibility = Visibility.Visible;
             DeleteAlbumButton.IsEnabled = true;
             EditAlbumButton.IsEnabled = true;
@@ -208,32 +248,31 @@ namespace Filterizer2.Windows
 
         private void SetMediaTray()
         {
-            // MediaTray.Visibility = Visibility.Visible;
-            AlbumTray.Visibility = Visibility.Collapsed;
+	        MediaTray.Visibility = Visibility.Visible;
             DeleteMediaButton.IsEnabled = true;
-            MediaFullscreenButton.IsEnabled = true;
             EditMediaButton.IsEnabled = true;
             FileExplorerButton.IsEnabled = true;
         }
         
         private void SetHiddenAlbumTray()
         {
-            SetAlbumTray();
+	        AlbumTray.Visibility = Visibility.Collapsed;
             DeleteAlbumButton.IsEnabled = false;
             EditAlbumButton.IsEnabled = false;
         }
 
         private void SetHiddenMediaTray()
         {
-            SetMediaTray();
+	        MediaTray.Visibility = Visibility.Collapsed;
             DeleteMediaButton.IsEnabled = false;
-            MediaFullscreenButton.IsEnabled = false;
             EditMediaButton.IsEnabled = false;
             FileExplorerButton.IsEnabled = false;
         }
 
         public void ReloadAllMediaItems()
         {
+	        //TODO make this lazy evaled?
+	        //TODO How to do that with a sorter?
             List<IMediaDisplayItem> displayItems = new List<IMediaDisplayItem>();
 
             if (ShowMediaCheckbox.IsChecked == true)
@@ -338,7 +377,13 @@ namespace Filterizer2.Windows
                 ImageView.EndInit();
             }
         }
-    
+
+        private void CreateAlbum(List<MediaItem>? startingItems = null)
+        {
+	        new EditAlbumWindow(null, startingItems).ShowDialog();
+            
+	        ReloadAllMediaItems();
+        }
     
         private void OpenTagDictionaryButton_Click(object sender, RoutedEventArgs e)
         {
@@ -395,9 +440,7 @@ namespace Filterizer2.Windows
 
         private void CreateAlbumButton_Click(object sender, RoutedEventArgs e)
         {
-            new EditAlbumWindow().ShowDialog();
-            
-            ReloadAllMediaItems();
+	        CreateAlbum();
         }
 
         private void DeleteAlbumButton_Click(object sender, RoutedEventArgs e)
@@ -529,7 +572,10 @@ namespace Filterizer2.Windows
         
         private void FileExplorerButton_OnClick(object sender, RoutedEventArgs e)
         {
-	        OpenFileExplorerAndSelectFile(((MediaItem)MediaListBox.SelectedItem).MediaFilePath);
+	        if (MediaListBox.SelectedItem is MediaItem mediaItem)
+	        {
+		        OpenFileExplorerAndSelectFile(mediaItem.MediaFilePath);
+	        }
         }
         
         private void OpenFileExplorerAndSelectFile(string filePath)

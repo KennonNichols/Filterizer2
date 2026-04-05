@@ -45,57 +45,47 @@ namespace Filterizer2.Repositories
 		}
 		
 		
-		public static List<AlbumItem> GetAlbums()
+		public static IEnumerable<AlbumItem> GetAlbums()
 		{
-			List<AlbumItem> albums = new List<AlbumItem>();
-
 			using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
 
-			string selectAlbumsQuery = "SELECT Id, Name, Description FROM Album;";
+			const string selectAlbumsQuery = "SELECT Id, Name, Description FROM Album;";
 
-			using (var command = new SQLiteCommand(selectAlbumsQuery, connection))
+			using var command = new SQLiteCommand(selectAlbumsQuery, connection);
+			using var reader = command.ExecuteReader();
+			while (reader.Read())
 			{
-				using (var reader = command.ExecuteReader())
+				var album = new AlbumItem
 				{
-					while (reader.Read())
+					Id = reader.GetInt32(0),
+					Name = reader.GetString(1),
+					Description = reader.GetString(2),
+				};
+						
+				//An album is made, now we need to get media items
+						
+				//First, get all media IDs associated with this album
+				const string selectAlbumMediaQuery = @"
+			                SELECT m.Id 
+			                FROM Media m 
+			                INNER JOIN AlbumMedia am ON am.MediaId = m.Id 
+			                WHERE am.AlbumId = @AlbumId;";
+
+				using var mediaCommand = new SQLiteCommand(selectAlbumMediaQuery, connection);
+				mediaCommand.Parameters.AddWithValue("@AlbumId", album.Id);
+
+				using var mediaReader = mediaCommand.ExecuteReader();
+				while (mediaReader.Read())
+				{
+					int mediaId = mediaReader.GetInt32(0);
+					if (MediaRepository.TryGetMediaById(mediaId, out MediaItem foundItem))
 					{
-						var album = new AlbumItem
-						{
-							Id = reader.GetInt32(0),
-							Name = reader.GetString(1),
-							Description = reader.GetString(2),
-						};
-						albums.Add(album);
+						album.MediaItems.Add(foundItem);
 					}
 				}
+
+				yield return album;
 			}
-
-			foreach (var album in albums)
-			{
-				const string selectAlbumMediaQuery = @"
-		                SELECT m.Id, m.LocalFilename, m.Title, m.Description 
-		                FROM Media m 
-		                INNER JOIN AlbumMedia am ON am.MediaId = m.Id 
-		                WHERE am.AlbumId = @AlbumId;";
-
-				using var command = new SQLiteCommand(selectAlbumMediaQuery, connection);
-				command.Parameters.AddWithValue("@AlbumId", album.Id);
-
-				using var reader = command.ExecuteReader();
-				while (reader.Read())
-				{
-					var mediaItem = new MediaItem
-					{
-						Id = reader.GetInt32(0),
-						LocalFilename = reader.GetString(1),
-						Title = reader.GetString(2),
-						Description = reader.GetString(3)
-					};
-					album.MediaItems.Add(mediaItem);
-				}
-			}
-
-			return albums;
 		}
 
 		
@@ -105,7 +95,7 @@ namespace Filterizer2.Repositories
 
 			using var transaction = connection.BeginTransaction();
 			// Update the album details
-			string updateAlbumQuery = @"
+			const string updateAlbumQuery = @"
                 UPDATE Album 
                 SET Name = @Name, Description = @Description 
                 WHERE Id = @Id;";

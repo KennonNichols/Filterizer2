@@ -4,7 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wpf="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
         xmlns:filterizer2="clr-namespace:Filterizer2"
-        Title="Filterizer2" Height="450" Width="800"
+        Title="Filterizer2" Height="675" Width="1200"
         KeyDown="Window_KeyDown"
         MouseMove="MainWindow_OnMouseMove"
         >
@@ -107,10 +107,12 @@
                 
                 <StackPanel Orientation="Vertical" Grid.Row="1" x:Name="MediaControlPanel">
                     <StackPanel Orientation="Horizontal">
-                        <Button Content="Edit" Name="EditMediaButton" IsEnabled="False" Margin="20,5,10,5" Click="EditMediaButton_Click"/>
-                        <Button Content="Delete" Name="DeleteMediaButton" IsEnabled="False" Margin="20,5,10,5" Click="DeleteMediaButton_Click"/>
-                        <Button Content="Fullscreen" Name="MediaFullscreenButton" IsEnabled="False" Margin="20,5,10,5" Click="MediaFullscreenButton_OnClick"/>
-                        <Button Content="Find File" Name="FileExplorerButton" IsEnabled="False" Margin="20,5,10,5" Click="FileExplorerButton_OnClick"/>
+                        <Button Content="Fullscreen" Name="MediaFullscreenButton" IsEnabled="True" Margin="20,5,10,5" Click="MediaFullscreenButton_OnClick"/>
+                        <StackPanel Orientation="Horizontal" x:Name="MediaTray">
+                            <Button Content="Edit" Name="EditMediaButton" IsEnabled="False" Margin="20,5,10,5" Click="EditMediaButton_Click"/>
+                            <Button Content="Delete" Name="DeleteMediaButton" IsEnabled="False" Margin="20,5,10,5" Click="DeleteMediaButton_Click"/>
+                            <Button Content="Find File" Name="FileExplorerButton" IsEnabled="False" Margin="20,5,10,5" Click="FileExplorerButton_OnClick"/>
+                        </StackPanel>
                     </StackPanel>
                     
                     <StackPanel x:Name="ControlTray" Orientation="Horizontal" Background="Gray" Height="50" VerticalAlignment="Bottom" Visibility="Collapsed">

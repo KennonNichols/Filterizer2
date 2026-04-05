@@ -83,6 +83,6 @@ namespace Filterizer2
         }
 
         public Brush FGColor => Inverted ? Brushes.White : Brushes.Black;
-        public Brush BGColor => Inverted ? Brushes.Black : Brushes.White;
+        public Brush BGColor => Inverted ? Brushes.Black : null;
     };
 }

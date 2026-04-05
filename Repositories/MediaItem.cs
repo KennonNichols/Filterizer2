@@ -29,10 +29,12 @@ namespace Filterizer2
 	        return Tags;
         }
 
-        public void AddTag(TagItem tagItem)
+        public bool AddTag(TagItem tagItem)
         {
+	        if (Tags.Contains(tagItem)) return false;
 	        Tags.Add(tagItem);
 	        ClearTagCache();
+	        return true;
         }
         
         public void SetTags(List<TagItem> tags)
@@ -55,10 +57,6 @@ namespace Filterizer2
 	        HashSet<TagItem> tags = new HashSet<TagItem>();
 	        foreach (TagItem tagItem in Tags)
 	        {
-		        string blonsky = tagItem.Description;
-		        blonsky += "Yes";
-		        System.Diagnostics.Debug.Print("Hello, we do it.");
-		        //TODO
 		        tagItem.GetTagHierarchyTags(ref tags);
 	        }
 	        

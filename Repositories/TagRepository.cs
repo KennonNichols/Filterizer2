@@ -263,6 +263,8 @@ namespace Filterizer2
             
             
             transaction.Commit();
+
+            _tagCache.Remove(editingTag.Id);
         }
 
         public static void RegisterParentsOfTag(TagItem tag, SQLiteConnection connection)

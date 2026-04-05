@@ -4,7 +4,7 @@ using Filterizer2.Repositories;
 
 namespace Filterizer2.Windows
 {
-	public partial class EditAlbumWindow : IHasFilter
+	public partial class EditAlbumWindow : IHasFilter, ISelectsTags
 	{
         private AlbumItem _albumItem;
         private bool _isEditMode;
@@ -16,7 +16,7 @@ namespace Filterizer2.Windows
         }
         
 
-        public EditAlbumWindow(AlbumItem? albumItem = null)
+        public EditAlbumWindow(AlbumItem? albumItem = null, List<MediaItem>? startingItems = null)
         {
             InitializeComponent();
 
@@ -40,8 +40,15 @@ namespace Filterizer2.Windows
             }
             else
             {
-                _albumItem = new AlbumItem();
-                _isEditMode = false;
+	            _albumItem = new AlbumItem();
+	            _isEditMode = false;
+	            if (startingItems != null)
+	            {
+		            foreach (MediaItem startingItem in startingItems)
+		            {
+			            AddMediaItem(startingItem);
+		            }
+	            }
             }
             
             ReloadAllMediaItems();
@@ -65,8 +72,13 @@ namespace Filterizer2.Windows
         {
             if (MediaListBox.SelectedItem is not MediaItem selectedMediaItem) return;
             if (_albumItem.MediaItems.Contains(selectedMediaItem)) return;
-            _albumItem.MediaItems.Add(selectedMediaItem);
-            AlbumContentsListBox.Items.Add(selectedMediaItem);
+            AddMediaItem(selectedMediaItem);
+        }
+
+        private void AddMediaItem(MediaItem item)
+        {
+	        _albumItem.MediaItems.Add(item);
+	        AlbumContentsListBox.Items.Add(item);
         }
 
         private void RemoveMediaItem_Click(object sender, RoutedEventArgs e)
@@ -103,7 +115,13 @@ namespace Filterizer2.Windows
         private void FilterMediaByTags_Click(object sender, RoutedEventArgs e)
         {
             FilterWindow filterWindow = new FilterWindow(this, Filter);
-            filterWindow.Show();
+            filterWindow.ShowDialog();
+        }
+
+        private void AddAllTags_Click(object sender, RoutedEventArgs e)
+        {
+	        SelectTagsWindow tagSelectWindow = new SelectTagsWindow(this, null);
+	        tagSelectWindow.ShowDialog();
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -132,5 +150,43 @@ namespace Filterizer2.Windows
             Sorter = mediaSorter;
             ReloadAllMediaItems();
         }
-    }
+
+        public void OnTagSelectComplete(List<TagItem> selectedTags)
+        {
+	        int count = selectedTags.Count;
+	        if (count == 0)
+	        {
+		        return;
+	        }
+	        if (MessageBox.Show(
+		            $"Do you want to add these {count} tags to EVERY piece of media in the album? Make sure these are only things (like a character) that are present in each piece of media, not just in one.",
+		            "Confirm adding Items",
+		            MessageBoxButton.YesNo,
+		            MessageBoxImage.Question
+	            ) == MessageBoxResult.No)
+	        {
+		        return;
+	        }
+	        foreach (MediaItem albumItemMediaItem in _albumItem.MediaItems)
+	        {
+		        // List<
+		        bool anyChanged = false;
+		        
+		        foreach (TagItem tag in selectedTags)
+		        {
+			        if (albumItemMediaItem.AddTag(tag))
+			        {
+				        anyChanged = true;
+			        }
+		        }
+
+		        if (anyChanged)
+		        {
+			        MediaRepository.UpdateMedia(albumItemMediaItem);
+		        }
+	        }
+        }
+
+        public List<TagItem> GetParents => new List<TagItem>();
+	}
 }

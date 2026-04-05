@@ -24,10 +24,14 @@
         <!-- Description -->
         <TextBlock Text="Description:" VerticalAlignment="Center" Margin="10" Grid.Row="1" Grid.Column="0" />
         <TextBox x:Name="DescriptionTextBox" Margin="10" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" AcceptsReturn="True" />
-
+        
+        <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="2" Grid.Column="0">
+            <!-- Add All Tags Button -->
+            <Button Content="Mass Add Tags" HorizontalAlignment="Right" Click="AddAllTags_Click" ToolTip="Prompt a tag selection, and add selected tags to all pieces of media in the album. Make sure that all pieces of media in the album contain this."/>
+        </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="2" Grid.Column="1">
             <!-- Filter Media By Tags Button -->
-            <Button Content="Filter Media By Tags" HorizontalAlignment="Right" Click="FilterMediaByTags_Click"/>
+            <Button Content="Filter Media By Tags" HorizontalAlignment="Right" Click="FilterMediaByTags_Click" Margin="10,0, 0,0"/>
             <!-- Sorter Selector Box -->
             <ComboBox x:Name="SorterSelectorBox" Width="130" SelectionChanged="SorterSelectorBox_SelectionChanged" Margin="10,0, 0,0">
                 <ComboBox.ItemTemplate>
