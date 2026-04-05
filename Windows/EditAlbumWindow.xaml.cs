@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using Filterizer2.Repositories;
@@ -14,7 +15,7 @@ namespace Filterizer2.Windows
         {
             Filter = filter;
         }
-        
+
 
         public EditAlbumWindow(AlbumItem? albumItem = null, List<MediaItem>? startingItems = null)
         {
@@ -27,7 +28,6 @@ namespace Filterizer2.Windows
             {
                 _albumItem = albumItem;
                 _isEditMode = true;
-
                 // Populate fields with existing album data
                 TitleTextBox.Text = _albumItem.Name;
                 DescriptionTextBox.Text = _albumItem.Description;
@@ -40,8 +40,8 @@ namespace Filterizer2.Windows
             }
             else
             {
-	            _albumItem = new AlbumItem();
 	            _isEditMode = false;
+	            _albumItem = new AlbumItem();
 	            if (startingItems != null)
 	            {
 		            foreach (MediaItem startingItem in startingItems)
@@ -50,6 +50,8 @@ namespace Filterizer2.Windows
 		            }
 	            }
             }
+            
+            
             
             ReloadAllMediaItems();
         }
@@ -111,6 +113,18 @@ namespace Filterizer2.Windows
             AlbumContentsListBox.Items.Insert(index + 1, mediaItem);
             AlbumContentsListBox.SelectedItem = mediaItem;
         }
+        
+        
+        private void InvertItems_Click(object sender, RoutedEventArgs e)
+        {
+	        _albumItem.MediaItems.Reverse();
+	        AlbumContentsListBox.Items.Clear();
+	        
+	        foreach (MediaItem albumItemMediaItem in _albumItem.MediaItems)
+	        {
+		        AlbumContentsListBox.Items.Add(albumItemMediaItem);
+	        }
+        }
 
         private void FilterMediaByTags_Click(object sender, RoutedEventArgs e)
         {
@@ -124,7 +138,7 @@ namespace Filterizer2.Windows
 	        tagSelectWindow.ShowDialog();
         }
 
-        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
 
@@ -133,7 +147,14 @@ namespace Filterizer2.Windows
 
             if (_isEditMode)
             {
-                AlbumRepository.UpdateAlbum(_albumItem);
+	            if (_albumItem.MediaItems.Count == 0)
+	            {
+		            AlbumRepository.DeleteAlbum(_albumItem);
+		            return;
+	            }
+	            
+		        AlbumRepository.UpdateAlbum(_albumItem);
+	            
             }
             else
             {
@@ -188,5 +209,6 @@ namespace Filterizer2.Windows
         }
 
         public List<TagItem> GetParents => new List<TagItem>();
+
 	}
 }

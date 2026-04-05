@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.SQLite;
 
 namespace Filterizer2.Repositories
@@ -5,7 +6,7 @@ namespace Filterizer2.Repositories
 	public class AlbumRepository
 	{
 		private const string DeleteAlbumMediaQuery = "DELETE FROM AlbumMedia WHERE AlbumId = @AlbumId;";
-		private const string InsertAlbumMediaQuery = "INSERT INTO AlbumMedia (AlbumId, MediaId) VALUES (@AlbumId, @MediaId);";
+		private const string InsertAlbumMediaQuery = "INSERT INTO AlbumMedia (AlbumId, MediaId, MediaIndex) VALUES (@AlbumId, @MediaId, @MediaIndex);";
 		private const string DeleteAlbumQuery = "DELETE FROM Album WHERE Id = @Id;";
 
 
@@ -27,17 +28,23 @@ namespace Filterizer2.Repositories
 				album.Id = Convert.ToInt32(command.ExecuteScalar());
 			}
 
-			const string insertAlbumMediaQuery = "INSERT INTO AlbumMedia (AlbumId, MediaId) VALUES (@AlbumId, @MediaId);";
+			const string insertAlbumMediaQuery = "INSERT INTO AlbumMedia (AlbumId, MediaId, MediaIndex) VALUES (@AlbumId, @MediaId, @MediaIndex);";
 
 			using (var command = new SQLiteCommand(insertAlbumMediaQuery, connection))
 			{
 				command.Parameters.AddWithValue("@AlbumId", album.Id);
-
+				int index = 0;
+				
 				foreach (var mediaItem in album.MediaItems)
 				{
 					command.Parameters.AddWithValue("@MediaId", mediaItem.Id);
+					command.Parameters.AddWithValue("@MediaIndex", index);
 					command.ExecuteNonQuery();
-					command.Parameters.RemoveAt("@MediaId");  // Clear parameter for next loop iteration
+					//Clear parameters for next loop iteration
+					command.Parameters.RemoveAt("@MediaId");  
+					command.Parameters.RemoveAt("@MediaIndex");  
+
+					index++;
 				}
 			}
 
@@ -66,7 +73,7 @@ namespace Filterizer2.Repositories
 						
 				//First, get all media IDs associated with this album
 				const string selectAlbumMediaQuery = @"
-			                SELECT m.Id 
+			                SELECT m.Id, am.MediaIndex
 			                FROM Media m 
 			                INNER JOIN AlbumMedia am ON am.MediaId = m.Id 
 			                WHERE am.AlbumId = @AlbumId;";
@@ -75,15 +82,25 @@ namespace Filterizer2.Repositories
 				mediaCommand.Parameters.AddWithValue("@AlbumId", album.Id);
 
 				using var mediaReader = mediaCommand.ExecuteReader();
+
+				List<MediaItem> items = new List<MediaItem>();
+				Dictionary<MediaItem, int> indices = new Dictionary<MediaItem, int>();
+				
 				while (mediaReader.Read())
 				{
 					int mediaId = mediaReader.GetInt32(0);
 					if (MediaRepository.TryGetMediaById(mediaId, out MediaItem foundItem))
 					{
-						album.MediaItems.Add(foundItem);
+						items.Add(foundItem);
+						indices[foundItem] = mediaReader.GetInt32(1);
 					}
 				}
-
+				items.Sort((itemA, itemB) => indices[itemA].CompareTo(indices[itemB]));
+				foreach (MediaItem mediaItem in items)
+				{
+					album.MediaItems.Add(mediaItem);
+				}
+				
 				yield return album;
 			}
 		}
@@ -119,12 +136,18 @@ namespace Filterizer2.Repositories
 			using (var command = new SQLiteCommand(InsertAlbumMediaQuery, connection))
 			{
 				command.Parameters.AddWithValue("@AlbumId", album.Id);
-
+				int index = 0;
+				
 				foreach (var mediaItem in album.MediaItems)
 				{
 					command.Parameters.AddWithValue("@MediaId", mediaItem.Id);
+					command.Parameters.AddWithValue("@MediaIndex", index);
 					command.ExecuteNonQuery();
-					command.Parameters.RemoveAt("@MediaId");
+					//Clear parameters for next loop iteration
+					command.Parameters.RemoveAt("@MediaId");  
+					command.Parameters.RemoveAt("@MediaIndex");  
+
+					index++;
 				}
 			}
 

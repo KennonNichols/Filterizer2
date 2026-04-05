@@ -122,6 +122,7 @@ namespace Filterizer2
                     CREATE TABLE IF NOT EXISTS AlbumMedia (
                         AlbumId INTEGER NOT NULL,
                         MediaId INTEGER NOT NULL,
+                        MediaIndex INTEGER,
                         PRIMARY KEY (AlbumId, MediaId),
                         FOREIGN KEY (AlbumId) REFERENCES Album(Id) ON DELETE CASCADE,
                         FOREIGN KEY (MediaId) REFERENCES Media(Id) ON DELETE CASCADE
