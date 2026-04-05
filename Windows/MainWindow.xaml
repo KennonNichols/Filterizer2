@@ -98,7 +98,7 @@
                     <RowDefinition Height="Auto" x:Name="MediaControlPanelRowDefinition"/>
                 </Grid.RowDefinitions>
                 
-                <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="1">
+                <Border Grid.Row="0" x:Name="MediaBorder" BorderBrush="LightGray" BorderThickness="1">
                     <Grid>
                         <wpf:VlcControl x:Name="VlcPlayer" Visibility="Hidden" />
                         <Image x:Name="ImageView" Visibility="Collapsed"/>

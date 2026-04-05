@@ -207,6 +207,9 @@ namespace Filterizer2.Windows
 	            ReloadAllMediaItems();
             }
         }
+
+        private Brush MediaBorderBrush = Brushes.LightGray;
+        private Brush AlbumBorderBrush = Brushes.LightBlue;
     
         private void MediaListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -216,11 +219,17 @@ namespace Filterizer2.Windows
                     ShowMedia(mediaItem.LocalFilename);
                     SetMediaTray();
                     SetHiddenAlbumTray();
+                    
+                    MediaBorder.BorderThickness = new Thickness(1);
+                    MediaBorder.BorderBrush = MediaBorderBrush;
                     break;
                 case AlbumItem albumItem:
                     ShowAlbum(albumItem);
                     SetHiddenMediaTray();
                     SetAlbumTray();
+                    
+                    MediaBorder.BorderThickness = new Thickness(4);
+                    MediaBorder.BorderBrush = AlbumBorderBrush;
                     break;
                 default:
                     StopShowingMedia();
@@ -326,6 +335,7 @@ namespace Filterizer2.Windows
     
         private void ShowMedia(string filePath)
         {
+	        
             bool mustEndInit = false;
             if (!ImageView.IsInitialized)
             {
@@ -667,15 +677,44 @@ namespace Filterizer2.Windows
         {
 	        OnUserRetakingControl();
 	        
-	        if (e.Key == Key.Escape)
+	        switch (e.Key)
 	        {
-		        SetFullscreen(false);
-		        return;
-	        }
+		        case Key.Escape:
+			        SetFullscreen(false);
+			        return;
+		        case Key.F:
+			        SetFullscreen(true);
+			        break;
+		        case Key.Up or Key.PageUp:
+		        {
+			        if (MediaListBox.SelectedIndex > 0) MediaListBox.SelectedIndex -= 1;
+			        break;
+		        }
+		        case Key.Down or Key.PageDown:
+		        {
+			        if (MediaListBox.SelectedIndex < MediaListBox.Items.Count - 1)
+			        {
+				        MediaListBox.SelectedIndex++;
+        
+				        MediaListBox.ScrollIntoView(MediaListBox.SelectedItem);
+			        }
 
-	        if (e.Key == Key.F)
-	        {
-		        SetFullscreen(true);
+			        break;
+		        }
+		        case Key.Left:
+		        {
+			        if (CurrentlySelectedItem is not AlbumItem albumItem) return;
+			        albumItem.NavigateLeft();
+			        ShowAlbum(albumItem);
+			        break;
+		        }
+		        case Key.Right:
+		        {
+			        if (CurrentlySelectedItem is not AlbumItem albumItem) return;
+			        albumItem.NavigateRight();
+			        ShowAlbum(albumItem);
+			        break;
+		        }
 	        }
         }
         
