@@ -6,8 +6,6 @@ namespace Filterizer2.Windows
 {
     public partial class TagDictionaryWindow
     {
-        private List<TagItem> _allTags = new List<TagItem>();
-
         public TagDictionaryWindow()
         {
             InitializeComponent();
@@ -16,8 +14,8 @@ namespace Filterizer2.Windows
 
         private void LoadAllTags()
         {
-            _allTags = TagRepository.GetTags(); // Assume this method gets all tags from the database
-            TagsListBox.ItemsSource = _allTags;
+	        // Assume this method gets all tags from the database
+            TagsListBox.ItemsSource = TagRepository.GetTags();
         }
 
         // Handles the filtering of tags as the user types
@@ -29,6 +27,7 @@ namespace Filterizer2.Windows
         private void UpdateTagList()
         {
             string filterText = TagFilterTextBox.Text.ToLower();
+            TagsListBox.ItemsSource = null;
             TagsListBox.ItemsSource = TagRepository.SearchTags(filterText);
         }
 
@@ -42,17 +41,31 @@ namespace Filterizer2.Windows
         {
             if (TagsListBox.SelectedItem is TagItem selectedTag)
             {
+	            bool hasParents = selectedTag.ParentTags.Any();
                 TagTitleTextBlock.Text = selectedTag.Name;
                 TagDescriptionTextBlock.Text = selectedTag.Description;
                 TagAliasesTextBlock.Text = selectedTag.Aliases.Any() 
                     ? "Aliases: " + string.Join(", ", selectedTag.Aliases) 
                     : "No Aliases";
+                TagParentsTextBlock.Text = hasParents
+	                ? "Implies: " + string.Join(", ", selectedTag.ParentTags) 
+	                : "Does not imply any other tags.";
 
                 // Set the border color based on the TagType
                 TagDetailsBorder.BorderBrush = new SolidColorBrush(selectedTag.Category.Color);
 
                 DeleteTagButton.IsEnabled = true;
                 EditTagButton.IsEnabled = true;
+
+                if (hasParents)
+                {
+	                TagNameHierarchyPanel.Visibility = Visibility.Visible;
+	                TagNameHierarchy.ItemsSource = new[] { selectedTag };
+                }
+                else
+                {
+	                TagNameHierarchyPanel.Visibility = Visibility.Hidden;
+                }
             }
             else
             {
@@ -60,6 +73,7 @@ namespace Filterizer2.Windows
                 TagTitleTextBlock.Text = string.Empty;
                 TagDescriptionTextBlock.Text = string.Empty;
                 TagAliasesTextBlock.Text = string.Empty;
+                TagParentsTextBlock.Text = string.Empty;
                 TagDetailsBorder.BorderBrush = Brushes.Gray;
                 
                 DeleteTagButton.IsEnabled = false;
@@ -95,6 +109,19 @@ namespace Filterizer2.Windows
             UpdateUi();
             UpdateTagList();
         }
-    }
 
+        private void IOTagDictionary_OnClick(object sender, RoutedEventArgs e)
+        {
+	        var tagDictionaryIOWindow = new TagDictionaryIO();
+	        tagDictionaryIOWindow.ShowDialog();
+	        UpdateUi();
+	        UpdateTagList();
+        }
+
+        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        {
+	        var tagHierarchyWindow = new ViewMasterTagHierarchy();
+	        tagHierarchyWindow.ShowDialog();
+        }
+    }
 }

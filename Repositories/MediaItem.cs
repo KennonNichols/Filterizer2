@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net;
 using System.Windows.Shapes;
+using Filterizer2.Repositories;
 using Path = System.IO.Path;
 
 namespace Filterizer2
@@ -13,7 +14,7 @@ namespace Filterizer2
         public string LocalFilename { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public List<TagItem> Tags { get; set; }
+        private List<TagItem> Tags = new List<TagItem>();
 
         public string? ThumbnailPath => ThumbnailGenerator.GenerateOrGetThumbnail(MediaFilePath);
 
@@ -22,7 +23,49 @@ namespace Filterizer2
 
         public string DisplayTitle => Title;
         public string? DisplayThumbnailPath => ThumbnailPath;
-        public IEnumerable<TagItem> TagsForFiltering => Tags;
+
+        public List<TagItem> GetTags()
+        {
+	        return Tags;
+        }
+
+        public void AddTag(TagItem tagItem)
+        {
+	        Tags.Add(tagItem);
+	        ClearTagCache();
+        }
+        
+        public void SetTags(List<TagItem> tags)
+        {
+	        Tags = tags;
+	        ClearTagCache();
+        }
+        
+        public IEnumerable<TagItem> TagsForFiltering => _cachedTagsForFiltering ??= CalculateTagsForFiltering();
+        private IEnumerable<TagItem>? _cachedTagsForFiltering;
+        public void ClearTagCache()
+        {
+	        _cachedTagsForFiltering = null;
+	        AlbumItem.RecentlyInvalidatedMedia.Add(this);
+        }
         public string? GetMediaPath => MediaFilePath;
+
+        private IEnumerable<TagItem> CalculateTagsForFiltering()
+        {
+	        HashSet<TagItem> tags = new HashSet<TagItem>();
+	        foreach (TagItem tagItem in Tags)
+	        {
+		        string blonsky = tagItem.Description;
+		        blonsky += "Yes";
+		        System.Diagnostics.Debug.Print("Hello, we do it.");
+		        //TODO
+		        tagItem.GetTagHierarchyTags(ref tags);
+	        }
+	        
+	        foreach (TagItem tagItem in tags)
+	        {
+		        yield return tagItem;
+	        }
+        }
     }
 }

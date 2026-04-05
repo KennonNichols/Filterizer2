@@ -110,6 +110,14 @@ namespace Filterizer2
                         TagId INTEGER NOT NULL,
                         Alias TEXT NOT NULL,
                         FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE
+                    );",
+                         @"
+                    CREATE TABLE IF NOT EXISTS Implications (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        TagId INTEGER NOT NULL,
+                        ParentTagId INTEGER NOT NULL,
+                        FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE,
+                        FOREIGN KEY (ParentTagId) REFERENCES Tags(Id) ON DELETE CASCADE
                     );", @"
                     CREATE TABLE IF NOT EXISTS AlbumMedia (
                         AlbumId INTEGER NOT NULL,

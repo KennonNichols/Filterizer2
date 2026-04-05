@@ -1,8 +1,12 @@
-﻿using System.Diagnostics;
+﻿using System.Collections;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Filterizer2.Repositories;
@@ -11,6 +15,7 @@ using Vlc.DotNet.Core;
 using Vlc.DotNet.Core.Interops.Signatures;
 using XamlAnimatedGif;
 using Path = System.IO.Path;
+using Rectangle = System.Drawing.Rectangle;
 
 namespace Filterizer2.Windows
 {
@@ -37,6 +42,9 @@ namespace Filterizer2.Windows
 
             SorterSelectorBox.ItemsSource = MediaSorter.Sorters;
             SorterSelectorBox.SelectedIndex = 0;
+            
+            ThemeSelectorBox.ItemsSource = Theme.Themes;
+            ThemeSelectorBox.SelectedIndex = 0;
             
             //Initialize timer
             _timer = new DispatcherTimer
@@ -97,13 +105,6 @@ namespace Filterizer2.Windows
                     }
                 }
             }
-        }
-
-        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
-        {
-            base.OnRenderSizeChanged(sizeInfo);
-
-            ViewingWindow.MaxHeight = sizeInfo.NewSize.Height - 150;
         }
     
         private void LoadMediaButton_Click(object sender, RoutedEventArgs e)
@@ -199,7 +200,7 @@ namespace Filterizer2.Windows
 
         private void SetAlbumTray()
         {
-            MediaTray.Visibility = Visibility.Collapsed;
+            // MediaTray.Visibility = Visibility.Collapsed;
             AlbumTray.Visibility = Visibility.Visible;
             DeleteAlbumButton.IsEnabled = true;
             EditAlbumButton.IsEnabled = true;
@@ -207,10 +208,12 @@ namespace Filterizer2.Windows
 
         private void SetMediaTray()
         {
-            MediaTray.Visibility = Visibility.Visible;
+            // MediaTray.Visibility = Visibility.Visible;
             AlbumTray.Visibility = Visibility.Collapsed;
             DeleteMediaButton.IsEnabled = true;
+            MediaFullscreenButton.IsEnabled = true;
             EditMediaButton.IsEnabled = true;
+            FileExplorerButton.IsEnabled = true;
         }
         
         private void SetHiddenAlbumTray()
@@ -224,7 +227,9 @@ namespace Filterizer2.Windows
         {
             SetMediaTray();
             DeleteMediaButton.IsEnabled = false;
+            MediaFullscreenButton.IsEnabled = false;
             EditMediaButton.IsEnabled = false;
+            FileExplorerButton.IsEnabled = false;
         }
 
         public void ReloadAllMediaItems()
@@ -356,6 +361,10 @@ namespace Filterizer2.Windows
         {
             if (SorterSelectorBox.SelectedItem is not MediaSorter mediaSorter) return;
             Sorter = mediaSorter;
+            if (Sorter is RandomSorter randomSorter)
+            {
+	            randomSorter.Randomize();
+            } 
             ReloadAllMediaItems();
         }
 
@@ -510,6 +519,161 @@ namespace Filterizer2.Windows
             if (CurrentPlayer.State != MediaStates.Ended) return;
             CurrentPlayer.SetMedia(CurrentPlayer.GetMedia().Mrl);
             CurrentPlayer.Play();
+        }
+
+        private void MediaFullscreenButton_OnClick(object sender, RoutedEventArgs e)
+        {
+	        SetFullscreen(true);
+        }
+
+        
+        private void FileExplorerButton_OnClick(object sender, RoutedEventArgs e)
+        {
+	        OpenFileExplorerAndSelectFile(((MediaItem)MediaListBox.SelectedItem).MediaFilePath);
+        }
+        
+        private void OpenFileExplorerAndSelectFile(string filePath)
+        {
+	        if (File.Exists(filePath) || Directory.Exists(filePath))
+	        {
+		        Process.Start("explorer.exe", "/select,\"" + filePath + "\"");
+	        }
+	        else
+	        {
+		        MessageBox.Show("The specified file or directory could not be found.");
+	        }
+        }
+        
+        private bool _isFullscreen;
+        private WindowState _nonFullscreenWindowState;
+
+        private int? _savedSorterValue;
+        private int? _savedThemeValue;
+        private int? _savedMediaValue;
+        
+        private void SetFullscreen(bool fullscreen)
+        {
+	        if (fullscreen == _isFullscreen) return;
+	        _isFullscreen = fullscreen;
+
+	        _savedSorterValue = SorterSelectorBox.SelectedIndex;
+	        _savedThemeValue = ThemeSelectorBox.SelectedIndex;
+	        _savedMediaValue = MediaListBox.SelectedIndex;
+	        
+	        
+	        Visibility vis;
+	        if (fullscreen)
+	        {
+		        _nonFullscreenWindowState = WindowState;
+		        
+		        vis = Visibility.Collapsed;
+		        WindowStyle = WindowStyle.None;
+		        WindowState = WindowState.Maximized;
+	        }
+	        else
+	        {
+		        vis = Visibility.Visible;
+		        WindowState = _nonFullscreenWindowState;
+		        WindowStyle = WindowStyle.SingleBorderWindow;
+	        
+		        if (WindowState == WindowState.Normal)
+		        {
+			        Width = RestoreBounds.Width;
+			        Height = RestoreBounds.Height;
+			        Left = RestoreBounds.Left;
+			        Top = RestoreBounds.Top;
+		        }
+
+	        }
+
+	        MediaListBoxColumnDefinition.Width = new GridLength(fullscreen ? 0 : 200);
+
+	        MediaControlPanel.Visibility = vis;
+	        MediaListBox.Visibility = vis;
+	        MetaToolbar.Visibility = vis;
+
+        }
+
+        private void AnyBearingPanel_OnSizeChanged(object? sender, EventArgs eventArgs)
+        {
+	        if (_savedSorterValue != null)
+	        {
+		        SorterSelectorBox.SelectedIndex = (int)_savedSorterValue;
+	        }
+	        if (_savedMediaValue != null)
+	        {
+		        MediaListBox.SelectedIndex = (int)_savedMediaValue;
+	        }
+	        if (_savedThemeValue != null)
+	        {
+		        ThemeSelectorBox.SelectedIndex = (int)_savedThemeValue;
+	        }
+        }
+
+        private void OnUserRetakingControl()
+        {
+	        _savedSorterValue = null;
+	        _savedThemeValue = null;
+	        _savedMediaValue = null;
+        }
+        
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+	        OnUserRetakingControl();
+	        
+	        if (e.Key == Key.Escape)
+	        {
+		        SetFullscreen(false);
+		        return;
+	        }
+
+	        if (e.Key == Key.F)
+	        {
+		        SetFullscreen(true);
+	        }
+        }
+        
+
+        private void ThemeSelectorBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+	        if (ThemeSelectorBox.SelectedItem is not Theme theme) return;
+	        
+	        List<FrameworkElement> frameworkElements = new List<FrameworkElement>();
+	        GetLogicalChildCollection(Window, frameworkElements);
+	        foreach (FrameworkElement frameworkElement in frameworkElements)
+	        {
+		        frameworkElement.SetFrameworkElementBrushes(theme.GetBrushesForElement(frameworkElement));
+	        }
+        }
+        
+        private static void GetLogicalChildCollection<T>(DependencyObject parent, List<T> logicalCollection) where T : DependencyObject
+        {
+	        IEnumerable children = LogicalTreeHelper.GetChildren(parent);
+	        foreach (object child in children)
+	        {
+		        if (child is not DependencyObject depChild) continue;
+		        if (depChild is T dependencyObject)
+		        {
+			        logicalCollection.Add(dependencyObject);
+		        }
+		        GetLogicalChildCollection(depChild, logicalCollection);
+	        }
+        }
+
+        private void MainWindow_OnMouseMove(object sender, MouseEventArgs e)
+        {
+	        OnUserRetakingControl();
+	        
+	        if (_isFullscreen)
+	        {
+		        double x = e.GetPosition(Window).X;
+		        double y = e.GetPosition(Window).Y;
+		        bool shouldShowTray = (x < Window.ActualWidth / 6) | y > Window.ActualHeight * .9;
+		        
+		        MediaListBoxColumnDefinition.Width = new GridLength(shouldShowTray ? 200 : 0);
+		        MediaListBox.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
+		        MediaControlPanel.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
+	        }
         }
     }
 }

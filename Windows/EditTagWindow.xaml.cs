@@ -4,9 +4,10 @@ using System.Windows.Media;
 
 namespace Filterizer2.Windows
 {
-    public partial class EditTagWindow
+    public partial class EditTagWindow: ISelectsTags
     {
-        private List<string> Aliases { get; } = new List<string>();
+	    private List<string> Aliases { get; } = new List<string>();
+        private List<int> ParentIds { get; } = new List<int>();
 
         private readonly TagItem? _editingTag;
         
@@ -40,6 +41,13 @@ namespace Filterizer2.Windows
             {
                 AliasesListBox.Items.Add(tagItemAlias);
                 Aliases.Add(tagItemAlias);
+            }
+            
+            //Parents
+            foreach (var tagItemParent in tagItem.ParentTags)
+            {
+	            ParentsListBox.Items.Add(tagItemParent);
+	            ParentIds.Add(tagItemParent.Id);
             }
         }
 
@@ -88,7 +96,7 @@ namespace Filterizer2.Windows
                 _editingTag.Description = tagDescription;
                 _editingTag.Category = selectedTagType;
                 _editingTag.Aliases = Aliases;
-                
+                _editingTag.ParentIDs = ParentIds;
                 
                 TagRepository.UpdateTag(_editingTag);
             }
@@ -98,7 +106,9 @@ namespace Filterizer2.Windows
                 {
                     Name = tagName,
                     Category = selectedTagType,
-                    Description = tagDescription
+                    Description = tagDescription,
+                    Aliases = Aliases,
+                    ParentIDs = ParentIds
                 };
 
                 TagRepository.AddTag(newTag);
@@ -124,5 +134,35 @@ namespace Filterizer2.Windows
                 AliasesListBox.Items.Remove(alias);
             }
         }
+
+        public void OnTagSelectComplete(List<TagItem> parents)
+        {
+	        ParentIds.Clear();
+	        ParentsListBox.Items.Clear();
+	        foreach (TagItem parent in parents)
+	        {
+		        ParentIds.Add(parent.Id);
+	        }
+	        foreach (var tagItem in parents)
+	        {
+		        ParentsListBox.Items.Add(tagItem);
+	        }
+        }
+
+        public List<TagItem> GetParents => _editingTag?.ParentTags.ToList() ??
+                                           ParentsListBox.Items.SourceCollection.Cast<TagItem>().ToList();
+
+        private void EditParent_Click(object sender, RoutedEventArgs e)
+        {
+	        SelectTagsWindow selectTagsWindow = new SelectTagsWindow(this, _editingTag);
+	        selectTagsWindow.Show();
+        }
+    }
+
+    public interface ISelectsTags
+    {
+	    public void OnTagSelectComplete(List<TagItem> parents);
+
+	    public List<TagItem> GetParents { get; }
     }
 }

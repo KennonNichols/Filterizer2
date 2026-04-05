@@ -13,7 +13,7 @@ namespace Filterizer2
 		private static readonly Dictionary<string, TagCategory> LoadedTags = new Dictionary<string, TagCategory>();
 		private static bool _checkedTagsFile;
 		
-		public static TagCategory GetCategoryOfName(string name)
+		public static TagCategory GetCategoryOfName(string name, bool canGenerateFallback = false)
 		{
 			if (!_checkedTagsFile)
 			{
@@ -21,8 +21,9 @@ namespace Filterizer2
 				_checkedTagsFile = true;
 			}
 
-
 			if (LoadedTags.TryGetValue(name, out TagCategory category)) return category;
+			if (!canGenerateFallback) return null;
+			
 			category = new TagCategory(name,
 				"Auto-generated category. This likely occured because the TagCategoriesEditable.xml file has changed.",
 				Colors.Crimson);
@@ -82,10 +83,10 @@ namespace Filterizer2
 				_checkedTagsFile = true;
 			}
 			
-			foreach (TagCategory loadedTagsValue in LoadedTags.Values)
-			{
-				Debug.WriteLine(loadedTagsValue.Title);
-			}
+			// foreach (TagCategory loadedTagsValue in LoadedTags.Values)
+			// {
+			// 	Debug.WriteLine(loadedTagsValue.Title);
+			// }
 
 			return LoadedTags.Values;
 		}
@@ -100,5 +101,8 @@ namespace Filterizer2
 		public string Description => description;
 
 		public Color Color => color;
+
+		public Brush Brush => _brush ??= new SolidColorBrush(Color);
+		private Brush? _brush;
 	}
 }

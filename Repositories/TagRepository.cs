@@ -6,9 +6,7 @@ namespace Filterizer2
     
     public static class TagRepository
     {
-        private const string CreateTagQuery = """
-                                              INSERT INTO Tags (Name, Category, Description) VALUES (@name, @category, @description);
-                                              """;
+        private const string CreateTagQuery = "INSERT INTO Tags (Name, Category, Description) VALUES (@name, @category, @description);";
         private const string UpdateTagQuery = """
                                                               UPDATE Tags 
                                                               SET Name = @Name, 
@@ -17,13 +15,17 @@ namespace Filterizer2
                                                               WHERE Id = @Id;
                                               """;
         private const string DeleteTagQuery = "DELETE FROM Tags WHERE Id = @Id;";
+        private const string DeleteAllTagsQuery = "DELETE FROM Tags;";
+
+
+
+        /// <summary>
+        /// This should be the one and only place where TagItems are stored in memory.
+        /// </summary>
+        private static Dictionary<int, TagItem> _tagCache = new Dictionary<int, TagItem>();
         
         
-        
-        
-        
-        
-        public static void AddTag(TagItem tag)
+        public static TagItem AddTag(TagItem tag)
         {
             using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
             using var transaction = connection.BeginTransaction();
@@ -46,79 +48,162 @@ namespace Filterizer2
                 aliasCommand.Parameters.AddWithValue("@alias", alias);
                 aliasCommand.ExecuteNonQuery();
             }
+            
+            // Insert the parents
+            foreach (var parentTagId in tag.ParentIDs)
+            {
+	            var aliasCommand = connection.CreateCommand();
+	            aliasCommand.CommandText = "INSERT INTO Implications (TagId, ParentTagId) VALUES (@tagId, @parentTagId);";
+	            aliasCommand.Parameters.AddWithValue("@tagId", tagId);
+	            aliasCommand.Parameters.AddWithValue("@parentTagId", parentTagId);
+	            aliasCommand.ExecuteNonQuery();
+            }
 
+            tag.Id = (int)tagId;
             transaction.Commit();
+
+            return tag;
         }
 
-        public static List<TagItem> GetTags()
+        public static bool TryGetTagById(int tagId, out TagItem tagItem)
         {
-            var tags = new List<TagItem>();
+	        //Try immediately grabbing from cache instead of requerying the database
+	        if (_tagCache.TryGetValue(tagId, out tagItem!))
+	        {
+		        return true;
+	        }
+	        
+	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
+	        var command = connection.CreateCommand();
+	        command.CommandText = "SELECT * FROM Tags WHERE Id = @tagId";
+	        command.Parameters.AddWithValue("@tagId", tagId);
+	        using var reader = command.ExecuteReader();
+	        if (reader.Read())
+	        {
+		        tagItem = ReadRowAsTag(reader, connection);
+		        _tagCache.Add(tagId, tagItem);
+		        return true;
+	        }
 
-            using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
+	        tagItem = null!;
+	        return false;
+        }
+
+        public static IEnumerable<TagItem> GetTags()
+        {
+	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
             var command = connection.CreateCommand();
             command.CommandText = "SELECT * FROM Tags";
 
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                var tag = new TagItem
-                {
-                    Id = reader.GetInt32(0),
-                    Name = reader.GetString(1),
-                    Category = Tags.GetCategoryOfName(reader.GetString(2)),
-                    Description = reader.GetString(3)
-                };
-
-                // Retrieve aliases
-                var aliasCommand = connection.CreateCommand();
-                aliasCommand.CommandText = "SELECT Alias FROM TagAliases WHERE TagId = @tagId";
-                aliasCommand.Parameters.AddWithValue("@tagId", tag.Id);
-
-                using (var aliasReader = aliasCommand.ExecuteReader())
-                {
-                    while (aliasReader.Read())
-                    {
-                        tag.Aliases.Add(aliasReader.GetString(0));
-                    }
-                }
-
-                tags.Add(tag);
+                yield return ReadRowAsTag(reader, connection);
             }
-
-            return tags;
         }
+
+        private static TagItem ReadRowAsTag(SQLiteDataReader reader, SQLiteConnection connection)
+        {
+	        var tag = new TagItem
+	        {
+		        Id = reader.GetInt32(0),
+		        Name = reader.GetString(1),
+		        Category = Tags.GetCategoryOfName(reader.GetString(2), true),
+		        Description = reader.GetString(3)
+	        };
+
+	        // Retrieve aliases
+	        var aliasCommand = connection.CreateCommand();
+	        aliasCommand.CommandText = "SELECT Alias FROM TagAliases WHERE TagId = @tagId";
+	        aliasCommand.Parameters.AddWithValue("@tagId", tag.Id);
+
+	        using (var aliasReader = aliasCommand.ExecuteReader())
+	        {
+		        while (aliasReader.Read())
+		        {
+			        tag.Aliases.Add(aliasReader.GetString(0));
+		        }
+	        }
+
+	        // Retrieve parent IDs
+	        var parentCommand = connection.CreateCommand();
+	        parentCommand.CommandText = "SELECT ParentTagId FROM Implications WHERE TagId = @tagId";
+	        parentCommand.Parameters.AddWithValue("@tagId", tag.Id);
+
+	        using (var parentReader = parentCommand.ExecuteReader())
+	        {
+		        while (parentReader.Read())
+		        {
+			        tag.ParentIDs.Add(parentReader.GetInt32(0));
+		        }
+	        }
+
+	        return tag;
+        }
+
         
-        
-        public static List<TagItem> SearchTags(string searchString)
+        public static IEnumerable<TagItem> SearchTags(string searchString)
+        {
+	        return SearchTags(searchString, new HashSet<int>());
+        }
+        public static IEnumerable<TagItem> SearchTags(string searchString, HashSet<int> blacklist)
+        {
+	        return SearchTagsInternal(searchString).Where(tagItem => blacklist.All(i => i != tagItem.Id));
+        }
+        private static IEnumerable<TagItem> SearchTagsInternal(string searchString)
         {
             if (searchString == "")
             {
-                return GetTags();
+	            foreach (TagItem tagItem in GetTags())
+	            {
+		            yield return tagItem;
+	            }
+	            
+	            yield break;
             }
-            
-            var matchingTags = new List<TagItem>();
 
             using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
             var command = connection.CreateCommand();
 
             // SQL to search for matches in both Tags and TagAliases
             command.CommandText = """
-                                  SELECT 
-                                      T.Id, 
-                                      T.Name, 
-                                      T.Category, 
-                                      T.Description,
-                                      COALESCE(Alias, T.Name) AS SearchField,
-                                      CASE 
-                                          WHEN T.Name = @search OR Alias = @search THEN 0
-                                          WHEN T.Name LIKE @startWith OR Alias LIKE @startWith THEN 1
-                                          ELSE 2
-                                      END AS SortOrder
-                                  FROM Tags T
-                                  LEFT JOIN TagAliases A ON T.Id = A.TagId
-                                  WHERE T.Name LIKE @like OR Alias LIKE @like
-                                  ORDER BY SortOrder, SearchField ASC;
-                                  """;
+									WITH RankedTags AS (
+									    SELECT 
+									        T.Id, 
+									        T.Name, 
+									        T.Category, 
+									        T.Description,
+									        COALESCE(Alias, T.Name) AS SearchField,
+									        CASE 
+									            WHEN T.Name = @search OR Alias = @search THEN 0
+									            WHEN T.Name LIKE @startWith OR Alias LIKE @startWith THEN 1
+									            ELSE 2
+									        END AS SortOrder,
+											ROW_NUMBER() OVER (
+											    PARTITION BY T.Id 
+											    ORDER BY 
+											        CASE 
+											            WHEN T.Name = @search OR A.Alias = @search THEN 0
+											            WHEN T.Name LIKE @startWith OR A.Alias LIKE @startWith THEN 1
+											            ELSE 2
+											        END,
+											        COALESCE(A.Alias, T.Name)
+											) AS rn
+									    FROM Tags T
+									    LEFT JOIN TagAliases A ON T.Id = A.TagId
+									    WHERE T.Name LIKE @like OR Alias LIKE @like
+									)
+									SELECT 
+									    Id,
+									    Name,
+									    Category,
+									    Description,
+									    SearchField,
+									    SortOrder
+									FROM RankedTags
+									WHERE rn = 1
+									ORDER BY SortOrder, SearchField ASC;
+									""";
 
             command.Parameters.AddWithValue("@search", searchString);
             command.Parameters.AddWithValue("@startWith", searchString + "%");
@@ -127,31 +212,8 @@ namespace Filterizer2
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                int tagId = reader.GetInt32(0);
-
-                // Check if this tag has already been added to the list (to avoid duplicates)
-                var tagItem = matchingTags.FirstOrDefault(t => t.Id == tagId);
-                if (tagItem == null)
-                {
-                    tagItem = new TagItem
-                    {
-                        Id = tagId,
-                        Name = reader.GetString(1),
-                        Category = Tags.GetCategoryOfName(reader.GetString(2)),
-                        Description = reader.GetString(3),
-                        Aliases = new List<string>()
-                    };
-                    matchingTags.Add(tagItem);
-                }
-
-                string alias = reader.IsDBNull(4) ? "" : reader.GetString(4);
-                if (!string.IsNullOrEmpty(alias) && alias != tagItem.Name)
-                {
-                    tagItem.Aliases.Add(alias);
-                }
+                yield return ReadRowAsTag(reader, connection);
             }
-
-            return matchingTags;
         }
 
         public static void UpdateTag(TagItem editingTag)
@@ -172,7 +234,7 @@ namespace Filterizer2
                 updateTagCommand.ExecuteNonQuery();
             }
 
-            // 2. Delete existing aliases from the TagAliases table for this tag
+            //Delete existing aliases from the TagAliases table for this tag
             const string deleteAliasesQuery = "DELETE FROM TagAliases WHERE TagId = @TagId;";
 
             using (var deleteAliasesCommand = new SQLiteCommand(deleteAliasesQuery, connection))
@@ -181,7 +243,7 @@ namespace Filterizer2
                 deleteAliasesCommand.ExecuteNonQuery();
             }
 
-            // 3. Insert new aliases into the TagAliases table
+            //Insert new aliases into the TagAliases table
             const string insertAliasQuery = "INSERT INTO TagAliases (TagId, Alias) VALUES (@TagId, @Alias);";
 
             using (var insertAliasCommand = new SQLiteCommand(insertAliasQuery, connection))
@@ -192,12 +254,40 @@ namespace Filterizer2
                 {
                     insertAliasCommand.Parameters.AddWithValue("@Alias", alias);
                     insertAliasCommand.ExecuteNonQuery();
-                    insertAliasCommand.Parameters.RemoveAt("@Alias"); // Clear parameter for the next loop iteration
+                    insertAliasCommand.Parameters.RemoveAt("@Alias"); //Clear parameter for the next loop iteration
                 }
             }
 
-            // Commit transaction after all operations are successful
+            //Repeat for parental relationships
+            RegisterParentsOfTag(editingTag, connection);
+            
+            
             transaction.Commit();
+        }
+
+        public static void RegisterParentsOfTag(TagItem tag, SQLiteConnection connection)
+        {
+	        const string deleteImplicationsQuery = "DELETE FROM Implications WHERE TagId = @TagId;";
+
+	        using (var deleteImplicationsCommand = new SQLiteCommand(deleteImplicationsQuery, connection))
+	        {
+		        deleteImplicationsCommand.Parameters.AddWithValue("@TagId", tag.Id);
+		        deleteImplicationsCommand.ExecuteNonQuery();
+	        }
+            
+	        const string insertImplicationQuery = "INSERT INTO Implications (TagId, ParentTagId) VALUES (@TagId, @ParentTagId);";
+
+	        using (var insertImplicationCommand = new SQLiteCommand(insertImplicationQuery, connection))
+	        {
+		        insertImplicationCommand.Parameters.AddWithValue("@TagId", tag.Id);
+                
+		        foreach (int relationshipParentId in tag.ParentIDs)
+		        {
+			        insertImplicationCommand.Parameters.AddWithValue("@ParentTagId", relationshipParentId);
+			        insertImplicationCommand.ExecuteNonQuery();
+			        insertImplicationCommand.Parameters.RemoveAt("@ParentTagId"); //Clear parameter for the next loop iteration
+		        }
+	        }
         }
 
         public static void DeleteTag(TagItem tag)
@@ -209,6 +299,20 @@ namespace Filterizer2
             command.Parameters.AddWithValue("@Id", tag.Id);
             command.ExecuteNonQuery();
             transaction.Commit();
+
+            _tagCache.Remove(tag.Id);
+        }
+
+        public static void DeleteAllTags()
+        {
+	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
+	        using var transaction = connection.BeginTransaction();
+	        var command = connection.CreateCommand();
+	        command.CommandText = DeleteAllTagsQuery;
+	        command.ExecuteNonQuery();
+	        transaction.Commit();
+	        
+	        _tagCache.Clear();
         }
     }
 }

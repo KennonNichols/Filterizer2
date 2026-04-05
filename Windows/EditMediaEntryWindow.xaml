@@ -2,13 +2,20 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wpf="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
+        xmlns:windows="clr-namespace:Filterizer2.Windows"
+        x:Name="EditMediaWindow"
+        
         Title="New Media Entry" Height="900" Width="800">
+    <Window.Resources>
+        <!-- The Proxy "captures" the Window's context -->
+        <windows:BindingProxy x:Key="WindowProxy" Data="{Binding ElementName=EditMediaWindow}" />
+    </Window.Resources>
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height=".3*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -33,32 +40,59 @@
         
         
         <StackPanel Grid.Row="3" Margin="10">
-            <TextBox Name="TagSearchTextBox" Width="200" VerticalAlignment="Top"  TextChanged="TagSearchTextBox_TextChanged"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                <TextBox Name="TagSearchTextBox" Width="200"  TextChanged="TagSearchTextBox_TextChanged"/>
+                <Button Content="Open tag dictionary." Margin="5, 0, 0, 0" Click="OpenTagDictionaryButton_Click" Padding="2"></Button>
+                <Button Content="Toggle delete mode." Margin="5, 0, 0, 0" Click="ToggleDelete_OnClick" Padding="2"></Button>
+            </StackPanel>
 
-            <ListBox Name="TagSearchResultsListBox" MaxHeight="150" SelectionMode="Single" MouseLeftButtonUp="TagSearchResultsListBox_MouseLeftButtonUp">
+            <ListBox Name="TagSearchResultsListBox" Height="80" SelectionMode="Single" MouseLeftButtonUp="TagSearchResultsListBox_MouseLeftButtonUp">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Name}" ToolTip="{Binding Description}"/>
+                        <TextBlock Text="{Binding Name}" ToolTip="{Binding Description}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{Binding DisplayColorBrush}"/>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-
-            <ItemsControl Name="CurrentTagsItemsControl" Margin="0,10,0,0">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal" Margin="5">
-                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                            <Button Content="x" Width="20" Height="20" Margin="5,0,0,0" 
-                                    CommandParameter="{Binding}" Click="RemoveTagButton_Click"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Height="80">
+                <ItemsControl Name="CurrentTagsItemsControl" Margin="0,10,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="5">
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" ToolTip="{Binding Description}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{Binding DisplayColorBrush}"/>
+                                        </Style>
+                                    </TextBlock.Style>
+                                    <TextBlock.ContextMenu>
+                                        <ContextMenu Name="CustomTextBlockMenu">
+                                            <MenuItem Header="View in hierarchy" CommandParameter="{Binding}" Name="OpenHierarchyViewMenuItem" Click="OpenHierarchyViewMenuItem_OnClick"/>
+                                            <MenuItem Header="Delete tag" 
+                                                      CommandParameter="{Binding}" 
+                                                      IsEnabled="{Binding Source={StaticResource WindowProxy}, Path=Data.IsDeleteMode}" 
+                                                      Click="RemoveTagButton_Click"/>
+                                            <!-- <MenuItem Header="Delete tag" CommandParameter="{Binding}" IsEnabled="{Binding ElementName=EditMediaWindow, Path=IsDeleteMode, Mode=OneWay }" Click="RemoveTagButton_Click"/> -->
+                                        </ContextMenu>
+                                    </TextBlock.ContextMenu>
+                                </TextBlock>
+                                <!-- <Button Content="x" Width="20" Height="20" Margin="5,0,0,0"  -->
+                                <!--         CommandParameter="{Binding}" IsEnabled="{Binding ElementName=EditMediaWindow, Path=IsDeleteMode, Mode=OneWay }" Click="RemoveTagButton_Click"/> -->
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
         </StackPanel>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">

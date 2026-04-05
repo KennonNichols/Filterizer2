@@ -1,0 +1,38 @@
+<Window x:Class="Filterizer2.Windows.SelectImportOperationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:Filterizer2.Windows"
+        mc:Ignorable="d"
+        Title="Select operation" 
+        Width="450" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="White">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="25">
+            <Image x:Name="MessageIcon" Width="32" Height="32" 
+                   VerticalAlignment="Top" Margin="0,0,15,0" Visibility="Collapsed" />
+            
+            <TextBlock x:Name="MessageText" Text="Do you want to append and update, or completely overwrite the database?" 
+                       TextWrapping="Wrap" VerticalAlignment="Center" 
+                       FontSize="12" Foreground="#FF333333" MaxWidth="350"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Background="#F0F0F0" BorderBrush="#DFDFDF" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+                <Button x:Name="BtnLeft" Content="Append and Update" Width="Auto" Height="24" 
+                        Margin="0,0,10,0" Click="AppendButton_Click" />
+                <Button x:Name="BtnRight" Content="Overwrite" Width="85" Height="24" 
+                        Click="OverwriteButton_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

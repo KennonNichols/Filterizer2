@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,15 +8,21 @@ using XamlAnimatedGif;
 
 namespace Filterizer2.Windows
 {
-    public partial class EditMediaEntryWindow
+    public partial class EditMediaEntryWindow: INotifyPropertyChanged
     {
         public string MediaTitle => TitleTextBox.Text;
         public string MediaDescription => DescriptionTextBox.Text;
+        
+
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         private readonly string? _mediaFilePath;
         private readonly MediaItem _editingMediaItem;
         
         private bool _isEditMode;
+        private bool _deleteMode;
+
+        public bool IsDeleteMode => _deleteMode;
         
         private List<TagItem> currentTags = new List<TagItem>();
 
@@ -29,12 +36,11 @@ namespace Filterizer2.Windows
         
         public EditMediaEntryWindow(string? mediaFilePath)
         {
-            _editingMediaItem = new MediaItem()
+            _editingMediaItem = new MediaItem
             {
                 Title = "",
                 Description = "",
-                LocalFilename = Path.GetFileName(mediaFilePath),
-                Tags = new List<TagItem>()
+                LocalFilename = Path.GetFileName(mediaFilePath)
             };
             _mediaFilePath = mediaFilePath;
             
@@ -53,7 +59,7 @@ namespace Filterizer2.Windows
             LoadMediaPreview();
             TitleTextBox.Text = _editingMediaItem.Title;
             DescriptionTextBox.Text = _editingMediaItem.Description;
-            currentTags.AddRange(_editingMediaItem.Tags);
+            currentTags.AddRange(_editingMediaItem.GetTags());
             
             foreach (TagItem currentTag in currentTags)
             {
@@ -78,7 +84,7 @@ namespace Filterizer2.Windows
         {
             _editingMediaItem.Title = TitleTextBox.Text;
             _editingMediaItem.Description = DescriptionTextBox.Text;
-            _editingMediaItem.Tags = currentTags;
+            _editingMediaItem.SetTags(currentTags);
             _editingMediaItem.LocalFilename = Path.GetFileName(_mediaFilePath);
             base.OnClosed(e);
             
@@ -149,38 +155,40 @@ namespace Filterizer2.Windows
         // Handles the tag search when the text changes
         private void TagSearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            string searchText = TagSearchTextBox.Text;
-            if (!string.IsNullOrWhiteSpace(searchText))
-            {
-                List<TagItem> searchResults = TagRepository.SearchTags(searchText);
-                TagSearchResultsListBox.ItemsSource = searchResults.Take(10).ToList();
-            }
-            else
-            {
-                TagSearchResultsListBox.ItemsSource = null;
-            }
+	        string searchText = TagSearchTextBox.Text;
+	        TagSearchResultsListBox.ItemsSource = !string.IsNullOrWhiteSpace(searchText) ? TagRepository.SearchTags(searchText).Take(10).ToList() : null;
         }
 
         // Handles adding a tag when a search result is clicked
         private void TagSearchResultsListBox_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (TagSearchResultsListBox.SelectedItem is TagItem selectedTag)
-            {
-                if (!currentTags.Contains(selectedTag))
-                {
-                    currentTags.Add(selectedTag);
-                    CurrentTagsItemsControl.Items.Add(selectedTag);
-                }
+	        if (TagSearchResultsListBox.SelectedItem is not TagItem selectedTag) return;
+	        
+	        if (currentTags.All(tag => tag.Id != selectedTag.Id))
+	        {
+		        currentTags.Add(selectedTag);
+		        CurrentTagsItemsControl.Items.Add(selectedTag);
+	        }
+	        else
+	        {
+		        MessageBox.Show($"Image is already tagged '{selectedTag.Name}'.", "Error",
+			        MessageBoxButton.OK, MessageBoxImage.Error);
+	        }
 
-                TagSearchTextBox.Text = string.Empty;
-                TagSearchResultsListBox.ItemsSource = null;
-            }
+	        TagSearchTextBox.Text = string.Empty;
+	        TagSearchResultsListBox.ItemsSource = null;
         }
 
         // Handles removing a tag from the current tags list
         private void RemoveTagButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button { CommandParameter: TagItem tagToRemove }) return;
+	        if (!_deleteMode)
+	        {
+		        MessageBox.Show("Please toggle delete mode on to delete.", "Safe mode.",
+			        MessageBoxButton.OK, MessageBoxImage.Error);
+		        return;
+	        }
+            if (sender is not MenuItem { CommandParameter: TagItem tagToRemove }) return;
             currentTags.Remove(tagToRemove);
             CurrentTagsItemsControl.Items.Remove(tagToRemove);
         }
@@ -190,5 +198,38 @@ namespace Filterizer2.Windows
         {
             return currentTags;
         }
+        
+        private void OpenTagDictionaryButton_Click(object sender, RoutedEventArgs e)
+        {
+	        TagDictionaryWindow tagDictionaryWindow = new TagDictionaryWindow();
+	        tagDictionaryWindow.Show();
+        }
+
+        private void ToggleDelete_OnClick(object sender, RoutedEventArgs e)
+        {
+	        _deleteMode = !_deleteMode;
+	        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDeleteMode)));
+        }
+
+        private void OpenHierarchyViewMenuItem_OnClick(object sender, RoutedEventArgs e)
+        {
+	        if (sender is not MenuItem { CommandParameter: TagItem tagToView }) return;
+	        var tagHierarchyWindow = new ViewMasterTagHierarchy(tagToView);
+	        tagHierarchyWindow.ShowDialog();
+        }
+    }
+        
+    public class BindingProxy : Freezable
+    {
+	    protected override Freezable CreateInstanceCore() => new BindingProxy();
+
+	    public object Data
+	    {
+		    get => GetValue(DataProperty);
+		    set => SetValue(DataProperty, value);
+	    }
+
+	    public static readonly DependencyProperty DataProperty =
+		    DependencyProperty.Register("Data", typeof(object), typeof(BindingProxy), new UIPropertyMetadata(null));
     }
 }

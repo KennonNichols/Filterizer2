@@ -68,16 +68,13 @@ namespace Filterizer2.Windows
             if (FilterListBox.SelectedItem is not TagFilter filter) return;
             
             //If this is a fresh filter, add it to the main filter
-            if (filter.Tags.Count == 0)
+            if (filter.IsEmpty)
             {
                 Filter.Filters.Add(filter);
             }
                 
             TagItem tag = (TagItem)((Button)sender).Tag;
-            if (!filter.Tags.Contains(tag))
-            {
-                filter.Tags.Add(tag);  
-            }      
+            filter.AddTag(tag);  
                 
             UpdateFilters();
         }
@@ -89,6 +86,14 @@ namespace Filterizer2.Windows
             
             UpdateFilters();
         }
+        
+        private void InvertFilter(object sender, RoutedEventArgs e)
+        {
+	        TagFilter filter = ((TagFilter)((Button)sender).Tag);
+	        filter.Inverted = !filter.Inverted;
+	        
+	        UpdateFilters();
+        }
 
         private void UpdateFilters()
         {
@@ -97,8 +102,9 @@ namespace Filterizer2.Windows
             {
                 FilterListBox.Items.Add(filter);
             }
-            FilterListBox.Items.Add(new TagFilter(new List<TagItem>()));
+            FilterListBox.Items.Add(new TagFilter(new HashSet<TagItem>()));
         }
+
     }
 
 }

@@ -1,9 +1,7 @@
-<Window x:Class="Filterizer2.Windows.FilterWindow"
+<Window x:Class="Filterizer2.Windows.SelectTagsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
-        Title="Filter Builder" Height="450" Width="900">
+        Title="Tag Dictionary" Height="450" Width="800">
 
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
@@ -19,10 +17,12 @@
                      SelectionChanged="TagsListBox_SelectionChanged">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Click="TagSelection" Tag="{Binding Path=.}" Content="->" Margin="0,0,10,0" />
-                            <TextBlock Text="{Binding Name}"/>
-                        </StackPanel>
+                        <Border BorderThickness="1" BorderBrush="{Binding DisplayColorBrush}" Padding="1">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Click="TagSelection" Tag="{Binding Path=.}" Content="->" Margin="0,0,10,0" />
+                                <TextBlock Text="{Binding Name}"/>
+                            </StackPanel>
+                        </Border>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
@@ -42,8 +42,7 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <Button Click="DeleteFilter" Tag="{Binding Path=.}" Content="x" Margin="0,0,10,0" />
-                                <Button Click="InvertFilter" Tag="{Binding Path=.}" Content="-+" Margin="0,0,10,0" />
-                                <TextBlock Padding="1 " Text="{Binding Summary}" Background="{Binding BGColor}" Foreground="{Binding FGColor}"/>
+                                <TextBlock Text="{Binding Name}"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>

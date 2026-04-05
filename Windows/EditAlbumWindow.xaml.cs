@@ -49,10 +49,7 @@ namespace Filterizer2.Windows
         
         public void ReloadAllMediaItems()
         {
-            List<MediaItem> displayItems = MediaRepository.GetAllMediaItems();
-            
-            
-            displayItems = displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
+            List<MediaItem> displayItems = MediaRepository.GetAllMediaItems().Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
             
             displayItems.Sort(Sorter);
             

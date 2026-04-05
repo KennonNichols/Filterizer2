@@ -19,10 +19,8 @@ namespace Filterizer2
         
         
         
-        public static List<MediaItem> GetAllMediaItems()
+        public static IEnumerable<MediaItem> GetAllMediaItems()
         {
-            var mediaItems = new List<MediaItem>();
-
             using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
             // First, get all media items
             string mediaQuery = "SELECT * FROM Media";
@@ -39,18 +37,12 @@ namespace Filterizer2
                             Title = reader["Title"].ToString(),
                             Description = reader["Description"].ToString()
                         };
-                        mediaItems.Add(mediaItem);
+                        
+                        mediaItem.SetTags(GetTagsForMediaItem(mediaItem.Id, connection));
+                        yield return mediaItem;
                     }
                 }
             }
-
-            // Then, get and associate tags for each media item
-            foreach (var mediaItem in mediaItems)
-            {
-                mediaItem.Tags = GetTagsForMediaItem(mediaItem.Id, connection);
-            }
-
-            return mediaItems;
         }
 
         private static List<TagItem> GetTagsForMediaItem(int mediaId, SQLiteConnection connection)
@@ -58,7 +50,7 @@ namespace Filterizer2
             var tags = new List<TagItem>();
 
             const string tagQuery = @"
-                SELECT Tags.Id, Tags.Name, Tags.Category, Tags.Description
+                SELECT Tags.Id
                 FROM Tags
                 INNER JOIN MediaTags ON Tags.Id = MediaTags.TagId
                 WHERE MediaTags.MediaId = @mediaId";
@@ -66,19 +58,15 @@ namespace Filterizer2
             using var command = new SQLiteCommand(tagQuery, connection);
             command.Parameters.AddWithValue("@mediaId", mediaId);
             using var reader = command.ExecuteReader();
+
             while (reader.Read())
             {
-                var tag = new TagItem()
-                {
-                    Id = Convert.ToInt32(reader["Id"]),
-                    Name = reader["Name"].ToString(),
-                    Category = Tags.GetCategoryOfName(reader["Category"].ToString()),
-                    Description = reader["Description"].ToString()
-                };
-                tags.Add(tag);
+	            if (TagRepository.TryGetTagById(Convert.ToInt32(reader["Id"]), out TagItem tag))
+	            {
+		            tags.Add(tag);
+	            }
             }
-
-
+            
             return tags;
         }
         
@@ -103,7 +91,7 @@ namespace Filterizer2
             }
 
             // Insert associated tags into the MediaTags table
-            foreach (var tag in mediaItem.Tags)
+            foreach (var tag in mediaItem.GetTags())
             {
                 using var command = new SQLiteCommand(MediaTagInsertQuery, connection);
                 command.Parameters.AddWithValue("@mediaId", mediaItem.Id);
@@ -160,7 +148,7 @@ namespace Filterizer2
             }
 
             // Insert associated tags into the MediaTags table
-            foreach (var tag in mediaItem.Tags)
+            foreach (var tag in mediaItem.GetTags())
             {
                 using var command = new SQLiteCommand(MediaTagInsertQuery, connection);
                 command.Parameters.AddWithValue("@mediaId", mediaItem.Id);

@@ -13,6 +13,7 @@ namespace Filterizer2
 				yield return new PostTimeDescendingSorter();
 				yield return new NumberOfTagsAscendingSorter();
 				yield return new NumberOfTagsDescendingSorter();
+				yield return new RandomSorter();
 			}
 		}
 		
@@ -123,5 +124,36 @@ namespace Filterizer2
 		}
 
 		public override string Label => "Time added (asc)";
+	}
+
+	public class RandomSorter : MediaSorter
+	{
+		private Random _random = new Random();
+		private Dictionary<int, float> _values = [];
+		
+		public override int Compare(IMediaDisplayItem? item1, IMediaDisplayItem? item2)
+		{
+			if (TryDoBaseComparison(item1, item2, out int result))
+			{
+				return result;
+			}
+
+			return GetSeededValue(item2.Id).CompareTo(GetSeededValue(item1.Id));
+		}
+
+		private float GetSeededValue(int id)
+		{
+			if (_values.TryGetValue(id, out float value)) return value;
+			value = _random.NextSingle();
+			_values.Add(id, value);
+			return value;
+		}
+
+		public void Randomize()
+		{
+			_values.Clear();
+		}
+
+		public override string Label => "Random";
 	}
 }

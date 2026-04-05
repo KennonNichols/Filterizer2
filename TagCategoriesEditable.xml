@@ -1,13 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <TagCategories>
     <li>
-        <Name>Example category</Name>
+        <Name>Example_Category</Name>
         <Description>This is a description. Edit TagCategoriesEditable.xml to create your own tag categories.</Description>
         <Color>0, 255, 128</Color>
     </li>
     <li>
-        <Name>Other category</Name>
+        <Name>Other_category</Name>
         <Description>This is a second example category.</Description>
         <Color>0, 0, 128</Color>
+    </li>
+
+
+
+
+
+    <li>
+        <Name>Sexuality</Name>
+        <Description>Gender identity of focus, or sexual identity of sex act (cis male, lesbian, et.c.).</Description>
+        <Color>194, 131, 59</Color>
+    </li>
+    <li>
+        <Name>Feature</Name>
+        <Description>Feature in image, like a choker, or a motorcycle.</Description>
+        <Color>61, 78, 162</Color>
+    </li>
+    <li>
+        <Name>Act</Name>
+        <Description>A sex act or position.</Description>
+        <Color>0, 0, 0</Color>
+    </li>
+    <li>
+        <Name>Meta</Name>
+        <Description>Concepts that aren't actually in the media, like point of view.</Description>
+        <Color>231, 212, 128</Color>
+    </li>
+    <li>
+        <Name>Artstyle</Name>
+        <Description>Style of art.</Description>
+        <Color>120, 239, 213</Color>
+    </li>
+    <li>
+        <Name>Species</Name>
+        <Description>Species or species-specific features.</Description>
+        <Color>1, 89, 26</Color>
+    </li>
+    <li>
+        <Name>Character</Name>
+        <Description>Character.</Description>
+        <Color>94, 182, 9</Color>
+    </li>
+    <li>
+        <Name>Ip</Name>
+        <Description>Franchise, universe, or IP.</Description>
+        <Color>162, 61, 113</Color>
+    </li>
+    <li>
+        <Name>Artist</Name>
+        <Description>Artist.</Description>
+        <Color>183, 11, 64</Color>
     </li>
 </TagCategories>
