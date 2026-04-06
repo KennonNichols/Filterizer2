@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -28,30 +29,42 @@ namespace Filterizer2.Windows
         
         public MainWindow()
         {
-            DeleteOrphans();
-            InitializeComponent();
-            ReloadAllMediaItems();
-
+	        DeleteOrphans();
+	        SettingsManager.Load();
+	        InitializeComponent();
+	        ReloadAllMediaItems();
+	        
             SorterSelectorBox.ItemsSource = MediaSorter.Sorters;
             SorterSelectorBox.SelectedIndex = 0;
             
             ThemeSelectorBox.ItemsSource = Theme.Themes;
-            ThemeSelectorBox.SelectedIndex = 0;
+            ThemeSelectorBox.SelectedIndex = SettingsManager.ThemeIndex;
+
+            Width = SettingsManager.WindowWidth;
+            Height = SettingsManager.WindowHeight;
             
             //Initialize timer
             _timer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(500) // Update every 500 ms
+                Interval = TimeSpan.FromMilliseconds(500) //Update every 500 ms
             };
             _timer.Tick += Timer_Tick;
             _timer.Start();
         
-            // Set the VLC library path
+            //Set the VLC library path
             string libDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libvlc");
             VlcPlayer.SourceProvider.CreatePlayer(new DirectoryInfo(libDirectory));
         }
-        
-        
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+	        SettingsManager.SetTheme(ThemeSelectorBox.SelectedIndex);
+	        SettingsManager.SetWindowHeight(Height);
+	        SettingsManager.SetWindowWidth(Width);
+	        SettingsManager.Save();
+	        base.OnClosing(e);
+        }
+
         private IMediaDisplayItem? CurrentlySelectedItem => MediaListBox.SelectedItem as IMediaDisplayItem;
 
         private static void DeleteOrphans()
@@ -219,7 +232,7 @@ namespace Filterizer2.Windows
                     SetMediaTray();
                     SetHiddenAlbumTray();
                     
-                    MediaBorder.BorderThickness = new Thickness(1);
+                    MediaBorder.BorderThickness = new Thickness(0);
                     MediaBorder.BorderBrush = MediaBorderBrush;
                     break;
                 case AlbumItem albumItem:
@@ -420,7 +433,7 @@ namespace Filterizer2.Windows
         private void PausePlayer()
         {
 	        CurrentPlayer?.Pause();
-	        TogglePlayButton.Content = "Play";
+	        if(!hidingMedia) TogglePlayButton.Content = "Play";
         }
         private void PlayPlayer(Uri? mediaFileUri = null)
         {
@@ -432,7 +445,7 @@ namespace Filterizer2.Windows
 	        {
 		        CurrentPlayer?.Play();
 	        }
-	        TogglePlayButton.Content = "Pause";
+	        if(!hidingMedia) TogglePlayButton.Content = "Pause";
         }
         
         private void CreateAlbum(List<MediaItem>? startingItems = null)
@@ -584,17 +597,45 @@ namespace Filterizer2.Windows
         
         private void Timer_Tick(object? sender, EventArgs e)
         {
-	        if (CurrentPlayer == null) return;
-            if (CurrentPlayer.Length <= 0) return;
-            
-            // Update the slider
-            VideoSeekBar.Maximum = CurrentPlayer.Length;
-            VideoSeekBar.Value = CurrentPlayer.Time;
+	        if (CurrentPlayer is { Length: > 0 } && !hidingMedia)
+	        {
+		        // Update the slider
+		        VideoSeekBar.Maximum = CurrentPlayer.Length;
+		        VideoSeekBar.Value = CurrentPlayer.Time;
 
-            // Update the timer text
-            TimeSpan currentTime = TimeSpan.FromMilliseconds(CurrentPlayer.Time);
-            TimeSpan totalTime = TimeSpan.FromMilliseconds(CurrentPlayer.Length);
-            TimerText.Text = $@"{currentTime:mm\:ss} / {totalTime:mm\:ss}";
+		        // Update the timer text
+		        TimeSpan currentTime = TimeSpan.FromMilliseconds(CurrentPlayer.Time);
+		        TimeSpan totalTime = TimeSpan.FromMilliseconds(CurrentPlayer.Length);
+		        TimerText.Text = $@"{currentTime:mm\:ss} / {totalTime:mm\:ss}";
+	        }
+            
+            // Hide if fullscreen and not active
+            if (_isFullscreen)
+            {
+	            // double x = e.GetPosition(Window).X;
+	            // double y = e.GetPosition(Window).Y;
+	            // bool shouldShowTray = (x < Window.ActualWidth / 6) | y > Window.ActualHeight * .9;
+
+	            bool shouldShowTray = Environment.TickCount - lastMoveTime < 3000;
+
+	            if (hidingMedia && shouldShowTray)
+	            {
+		            MediaListBoxColumnDefinition.Width = new GridLength(shouldShowTray ? 200 : 0);
+		            MediaListBox.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
+		            MediaControlPanel.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
+		            ignoreOneMove = true;
+		            hidingMedia = false;
+	            }
+	            
+	            if (!hidingMedia && !shouldShowTray)
+	            {
+		            MediaListBoxColumnDefinition.Width = new GridLength(shouldShowTray ? 200 : 0);
+		            MediaListBox.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
+		            MediaControlPanel.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
+		            ignoreOneMove = true;
+		            hidingMedia = true;
+	            }
+            }
         }
 
         private void VideoSeekBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -783,7 +824,13 @@ namespace Filterizer2.Windows
 			        }
 		        case Key.Up or Key.PageUp:
 		        {
-			        if (MediaListBox.SelectedIndex > 0) MediaListBox.SelectedIndex -= 1;
+			        if (MediaListBox.SelectedIndex > 0)
+			        {
+				        MediaListBox.SelectedIndex -= 1;
+				        
+				        MediaListBox.ScrollIntoView(MediaListBox.SelectedItem);
+				        ignoreOneMove = true;
+			        }
 			        e.Handled = true;
 			        break;
 		        }
@@ -794,6 +841,7 @@ namespace Filterizer2.Windows
 				        MediaListBox.SelectedIndex++;
         
 				        MediaListBox.ScrollIntoView(MediaListBox.SelectedItem);
+				        ignoreOneMove = true;
 			        }
 			        e.Handled = true;
 			        break;
@@ -842,42 +890,30 @@ namespace Filterizer2.Windows
         {
 	        if (ThemeSelectorBox.SelectedItem is not Theme theme) return;
 	        
-	        List<FrameworkElement> frameworkElements = new List<FrameworkElement>();
-	        GetLogicalChildCollection(Window, frameworkElements);
-	        foreach (FrameworkElement frameworkElement in frameworkElements)
-	        {
-		        frameworkElement.SetFrameworkElementBrushes(theme.GetBrushesForElement(frameworkElement));
-	        }
-        }
-        
-        private static void GetLogicalChildCollection<T>(DependencyObject parent, List<T> logicalCollection) where T : DependencyObject
-        {
-	        IEnumerable children = LogicalTreeHelper.GetChildren(parent);
-	        foreach (object child in children)
-	        {
-		        if (child is not DependencyObject depChild) continue;
-		        if (depChild is T dependencyObject)
+	        
+	        Application.Current.Resources.MergedDictionaries.Clear();
+
+	        Application.Current.Resources.MergedDictionaries.Add(
+		        new ResourceDictionary
 		        {
-			        logicalCollection.Add(dependencyObject);
-		        }
-		        GetLogicalChildCollection(depChild, logicalCollection);
-	        }
+			        Source = new Uri($"Themes/{theme.Label}.xaml", UriKind.Relative)
+		        });
         }
 
+        private bool ignoreOneMove = false;
+        private int lastMoveTime = -1;
+        private bool hidingMedia = false;
+        
         private void MainWindow_OnMouseMove(object sender, MouseEventArgs e)
         {
 	        OnUserRetakingControl();
-	        
-	        if (_isFullscreen)
+
+	        if (ignoreOneMove)
 	        {
-		        double x = e.GetPosition(Window).X;
-		        double y = e.GetPosition(Window).Y;
-		        bool shouldShowTray = (x < Window.ActualWidth / 6) | y > Window.ActualHeight * .9;
-		        
-		        MediaListBoxColumnDefinition.Width = new GridLength(shouldShowTray ? 200 : 0);
-		        MediaListBox.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
-		        MediaControlPanel.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
+		        ignoreOneMove = false;
+		        return;
 	        }
+	        lastMoveTime = Environment.TickCount;
         }
     }
 }
