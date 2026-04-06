@@ -1,11 +1,9 @@
 ﻿using System.Collections;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -14,8 +12,8 @@ using Microsoft.Win32;
 using Vlc.DotNet.Core;
 using Vlc.DotNet.Core.Interops.Signatures;
 using XamlAnimatedGif;
+using static Filterizer2.MediaExtension;
 using Path = System.IO.Path;
-using Rectangle = System.Drawing.Rectangle;
 
 namespace Filterizer2.Windows
 {
@@ -26,16 +24,10 @@ namespace Filterizer2.Windows
     {
         private readonly DispatcherTimer _timer;
         private bool _wasPlayingBeforeSeek = false;
-
+        private MediaExtension _currentShownExtension = Unsupported;
         
         public MainWindow()
         {
-            
-            
-            
-            
-            
-            
             DeleteOrphans();
             InitializeComponent();
             ReloadAllMediaItems();
@@ -145,6 +137,7 @@ namespace Filterizer2.Windows
             }
 
             List<MediaItem> addedItems = new List<MediaItem>();
+
             
             foreach (string sourceFilePath in fileNames)
             {
@@ -202,6 +195,12 @@ namespace Filterizer2.Windows
             
             if (!singleMode)
             {
+	            // if (addedItems.RemoveAll(item => item.LocalFilename.MediaExtension().IsSeekable()) > 0)
+	            // {
+		           //  MessageBox.Show("Some of the items added were videos. Videos cannot be placed in albums, and ", "Error playing media",
+			          //   MessageBoxButton.OK, MessageBoxImage.Information);
+	            // }
+	            
 	            new EditAlbumWindow(null, addedItems).ShowDialog();
             
 	            ReloadAllMediaItems();
@@ -290,8 +289,27 @@ namespace Filterizer2.Windows
             }
             if (ShowAlbumsCheckbox.IsChecked == true)
             {
-                displayItems.AddRange(AlbumRepository.GetAlbums());
+	            List<AlbumItem> albums = AlbumRepository.GetAlbums().ToList();
+                displayItems.AddRange(albums);
+                HashSet<int> loadedMediaIDs = new HashSet<int>();
+                AlbumDupePanel.Visibility = Visibility.Visible;
+                if (PreventAlbumDuplicatesCheckbox.IsChecked == true)
+                {
+	                foreach (var albumItemMediaItem in albums.SelectMany(albumItem => albumItem.MediaItems))
+	                {
+		                loadedMediaIDs.Add(albumItemMediaItem.Id);
+	                }
+
+	                //Remove duplicates
+	                displayItems.RemoveAll(item =>
+		                item is MediaItem mediaItem && loadedMediaIDs.Contains(mediaItem.Id));
+                }
             }
+            else
+            {
+	            AlbumDupePanel.Visibility = Visibility.Collapsed;
+            }
+            
 
             displayItems = displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
             
@@ -305,7 +323,7 @@ namespace Filterizer2.Windows
             }
         }
 
-        private VlcMediaPlayer CurrentPlayer => VlcPlayer.SourceProvider.MediaPlayer;
+        private VlcMediaPlayer? CurrentPlayer => VlcPlayer?.SourceProvider?.MediaPlayer;
 
         private MediaSorter Sorter = new UnsortedSorter();
         
@@ -329,8 +347,13 @@ namespace Filterizer2.Windows
             ImageView.Visibility = Visibility.Collapsed;
             VlcPlayer.Visibility = Visibility.Collapsed;
             ControlTray.Visibility = Visibility.Collapsed;
-            VlcPlayer.SourceProvider?.MediaPlayer?.Pause();
-            CurrentPlayer.Audio.IsMute = true;
+            PausePlayer();
+            if (CurrentPlayer != null)
+            {
+	            CurrentPlayer.Audio.IsMute = true;
+            }
+
+            _currentShownExtension = Unsupported;
         }
     
         private void ShowMedia(string filePath)
@@ -349,29 +372,35 @@ namespace Filterizer2.Windows
         
             filePath = Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media"), filePath);
 
-            var extension = Path.GetExtension(filePath).ToLower();
-            switch (extension)
+            _currentShownExtension = filePath.MediaExtension();
+            switch (_currentShownExtension)
             {
-                case ".png" or ".jpg":
+                case Png or Jpg:
                 {
                     var image = new BitmapImage(new Uri(filePath));
                     ImageView.Source = image;
                     ImageView.Visibility = Visibility.Visible;
                     break;
                 }
-                case ".webp":
+                case Webp:
                     ImageView.Source = ImageHelpers.ConvertBitmapToBitmapImage(new FileInfo(filePath).NewBitmap());
                     ImageView.Visibility = Visibility.Visible;
                     break;
-                case ".gif":
+                case Gif:
                 {
                     AnimationBehavior.SetSourceUri(ImageView, new Uri(filePath));
                     AnimationBehavior.SetRepeatBehavior(ImageView, System.Windows.Media.Animation.RepeatBehavior.Forever);
                     ImageView.Visibility = Visibility.Visible;
                     break;
                 }
-                case ".webm" or ".mp4":
-                    CurrentPlayer.Play(new Uri(filePath));
+                case Webm or Mp4:
+	                if (CurrentPlayer == null)
+	                {
+		                MessageBox.Show("VLC player did not load.", "Error playing media",
+			                MessageBoxButton.OK, MessageBoxImage.Error);
+		                break;
+	                }
+	                PlayPlayer(new Uri(filePath));
                     VlcPlayer.Visibility = Visibility.Visible;
                     ControlTray.Visibility = Visibility.Visible;
                     CurrentPlayer.Audio.IsMute = false;
@@ -388,6 +417,24 @@ namespace Filterizer2.Windows
             }
         }
 
+        private void PausePlayer()
+        {
+	        CurrentPlayer?.Pause();
+	        TogglePlayButton.Content = "Play";
+        }
+        private void PlayPlayer(Uri? mediaFileUri = null)
+        {
+	        if (mediaFileUri != null)
+	        {
+		        CurrentPlayer?.Play(mediaFileUri);
+	        }
+	        else
+	        {
+		        CurrentPlayer?.Play();
+	        }
+	        TogglePlayButton.Content = "Pause";
+        }
+        
         private void CreateAlbum(List<MediaItem>? startingItems = null)
         {
 	        new EditAlbumWindow(null, startingItems).ShowDialog();
@@ -493,35 +540,51 @@ namespace Filterizer2.Windows
             LeftButton.IsEnabled = albumItem.CanNavigateLeft;
         }
         
-        private void PlayButton_Click(object sender, RoutedEventArgs e)
+        private void TogglePlayButton_Click(object sender, RoutedEventArgs e)
         {
-            CurrentPlayer.Play();
+            TogglePlay();
         }
 
-        private void PauseButton_Click(object sender, RoutedEventArgs e)
+        private void TogglePlay()
         {
-            CurrentPlayer.Pause();
+	        if (CurrentPlayer == null) return;
+
+	        if (CurrentPlayer.IsPlaying())
+	        {
+		        PausePlayer();
+	        }
+	        else
+	        {
+		        PlayPlayer();
+	        }
         }
 
         private void RewindButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurrentPlayer.Length <= 0) return;
-            var currentTime = CurrentPlayer.Time;
-            
-            EnsureMediaKeepsPlaying();
-            
-            CurrentPlayer.Time = Math.Max(currentTime - 10000, 0); // Rewind 10 seconds
+	        //Rewind 10 seconds
+	        SeekVideo(-10000);
         }
 
         private void ForwardButton_Click(object sender, RoutedEventArgs e)
         {
-            if (CurrentPlayer.Length <= 0) return;
-            var currentTime = CurrentPlayer.Time;
-            CurrentPlayer.Time = Math.Min(currentTime + 10000, CurrentPlayer.Length); // Forward 10 seconds
+	        //Forward 10 seconds
+	        SeekVideo(10000);
+        }
+
+        private void SeekVideo(int milliseconds)
+        {
+	        if (CurrentPlayer == null) return;
+	        if (CurrentPlayer.Length <= 0) return;
+	        var currentTime = CurrentPlayer.Time;
+            
+	        EnsureMediaKeepsPlaying();
+            
+	        CurrentPlayer.Time = Math.Clamp(currentTime + milliseconds, 0, CurrentPlayer.Length);
         }
         
         private void Timer_Tick(object? sender, EventArgs e)
         {
+	        if (CurrentPlayer == null) return;
             if (CurrentPlayer.Length <= 0) return;
             
             // Update the slider
@@ -536,6 +599,7 @@ namespace Filterizer2.Windows
 
         private void VideoSeekBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+	        if (CurrentPlayer == null) return;
             EnsureMediaKeepsPlaying();
             
             // Only seek if the user is interacting with the slider
@@ -547,10 +611,11 @@ namespace Filterizer2.Windows
         
         private void SeekBar_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
+	        if (CurrentPlayer == null) return;
             // Check if the video is currently playing
             if (CurrentPlayer.IsPlaying())
             {
-                CurrentPlayer.Pause();
+                PausePlayer();
                 _wasPlayingBeforeSeek = true;  // Remember that it was playing
             }
             else
@@ -563,15 +628,22 @@ namespace Filterizer2.Windows
         {
             if (_wasPlayingBeforeSeek)
             {
-                CurrentPlayer.Play();
+                PlayPlayer();
             }
+        }
+        
+        private void VolumeBar_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+	        if (CurrentPlayer == null) return;
+		    CurrentPlayer.Audio.Volume = (int)VolumeBar.Value;
         }
 
         private void EnsureMediaKeepsPlaying()
         {
+	        if (CurrentPlayer == null) return;
             if (CurrentPlayer.State != MediaStates.Ended) return;
             CurrentPlayer.SetMedia(CurrentPlayer.GetMedia().Mrl);
-            CurrentPlayer.Play();
+            PlayPlayer();
         }
 
         private void MediaFullscreenButton_OnClick(object sender, RoutedEventArgs e)
@@ -665,12 +737,29 @@ namespace Filterizer2.Windows
 		        ThemeSelectorBox.SelectedIndex = (int)_savedThemeValue;
 	        }
         }
+        
+
 
         private void OnUserRetakingControl()
         {
 	        _savedSorterValue = null;
 	        _savedThemeValue = null;
 	        _savedMediaValue = null;
+        }
+        
+        private void MainWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+	        OnUserRetakingControl();
+	        
+	        switch (e.Key)
+	        {
+		        case Key.Space:
+		        {
+			        TogglePlay();
+			        e.Handled = true;
+			        break;
+		        }
+	        }
         }
         
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -680,14 +769,22 @@ namespace Filterizer2.Windows
 	        switch (e.Key)
 	        {
 		        case Key.Escape:
-			        SetFullscreen(false);
-			        return;
+			        {
+				        
+				        SetFullscreen(false);
+				        e.Handled = true;
+				        break;
+			        }
 		        case Key.F:
-			        SetFullscreen(true);
-			        break;
+			        {
+				        SetFullscreen(true);
+				        e.Handled = true;
+				        break;
+			        }
 		        case Key.Up or Key.PageUp:
 		        {
 			        if (MediaListBox.SelectedIndex > 0) MediaListBox.SelectedIndex -= 1;
+			        e.Handled = true;
 			        break;
 		        }
 		        case Key.Down or Key.PageDown:
@@ -698,21 +795,43 @@ namespace Filterizer2.Windows
         
 				        MediaListBox.ScrollIntoView(MediaListBox.SelectedItem);
 			        }
-
+			        e.Handled = true;
 			        break;
 		        }
 		        case Key.Left:
 		        {
-			        if (CurrentlySelectedItem is not AlbumItem albumItem) return;
-			        albumItem.NavigateLeft();
-			        ShowAlbum(albumItem);
+			        if (CurrentlySelectedItem is AlbumItem albumItem)
+			        {
+				        albumItem.NavigateLeft();
+				        ShowAlbum(albumItem);
+				        e.Handled = true;
+				        break;
+			        }
+
+			        if (_currentShownExtension.IsSeekable())
+			        {
+				        SeekVideo(-1000);
+				        e.Handled = true;
+				        break;
+			        }
 			        break;
 		        }
 		        case Key.Right:
 		        {
-			        if (CurrentlySelectedItem is not AlbumItem albumItem) return;
-			        albumItem.NavigateRight();
-			        ShowAlbum(albumItem);
+			        if (CurrentlySelectedItem is AlbumItem albumItem)
+			        {
+				        albumItem.NavigateRight();
+				        ShowAlbum(albumItem);
+				        e.Handled = true;
+				        break;
+			        }
+
+			        if (_currentShownExtension.IsSeekable())
+			        {
+				        SeekVideo(1000);
+				        e.Handled = true;
+				        break;
+			        }
 			        break;
 		        }
 	        }

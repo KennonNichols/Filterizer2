@@ -5,6 +5,7 @@
         xmlns:wpf="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
         xmlns:filterizer2="clr-namespace:Filterizer2"
         Title="Filterizer2" Height="675" Width="1200"
+        PreviewKeyDown="MainWindow_OnPreviewKeyDown"
         KeyDown="Window_KeyDown"
         MouseMove="MainWindow_OnMouseMove"
         >
@@ -57,6 +58,14 @@
                 <StackPanel Orientation="Horizontal" Height="15">
                     <ToggleButton Height="10" Width="10" x:Name="ShowAlbumsCheckbox" Click="VisibilityButtonChecked"/>
                     <TextBlock Margin="10,0,0,0">Show albums</TextBlock>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Margin="10,0,0,0" Visibility="Collapsed" x:Name="AlbumDupePanel">
+                <StackPanel Orientation="Horizontal" Height="15">
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Height="15" ToolTip="Makes it so that media that are contained within an album (that is loaded in the selection) are not shown in the selection.">
+                    <ToggleButton Height="10" Width="10" IsChecked="True" x:Name="PreventAlbumDuplicatesCheckbox" Click="VisibilityButtonChecked"/>
+                    <TextBlock Margin="10,0,0,0">No duplicates</TextBlock>
                 </StackPanel>
             </StackPanel>
             <ComboBox x:Name="SorterSelectorBox" Width="130" Height="25" SelectionChanged="SorterSelectorBox_SelectionChanged" Margin="10,0, 0,0">
@@ -116,8 +125,7 @@
                     </StackPanel>
                     
                     <StackPanel x:Name="ControlTray" Orientation="Horizontal" Background="Gray" Height="50" VerticalAlignment="Bottom" Visibility="Collapsed">
-                        <Button Content="Play" Click="PlayButton_Click" Margin="5" />
-                        <Button Content="Pause" Click="PauseButton_Click" Margin="5" />
+                        <Button Content="Play" x:Name="TogglePlayButton" Click="TogglePlayButton_Click" Margin="5" />
                         <Button Content="&lt;&lt; 10s" Click="RewindButton_Click" Margin="5" />
                         <Button Content="&gt;&gt; 10s" Click="ForwardButton_Click" Margin="5" />
                             
@@ -126,6 +134,11 @@
             
                         <!-- Timestamp -->
                         <TextBlock x:Name="TimerText" Margin="5" VerticalAlignment="Center" Width="100" Text="00:00 / 00:00"/>
+                        
+                          
+                        <!-- Volume bar -->
+                        <Slider x:Name="VolumeBar" Width="200" Margin="5" ValueChanged="VolumeBar_OnValueChanged" Value="100" Maximum="200" TickPlacement="BottomRight" TickFrequency="100" IsSnapToTickEnabled="False"/>
+
                     </StackPanel>
                     
                     <StackPanel Orientation="Vertical" Name="AlbumTray" Visibility="Collapsed">

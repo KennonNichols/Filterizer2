@@ -58,7 +58,9 @@ namespace Filterizer2.Windows
         
         public void ReloadAllMediaItems()
         {
+	        // All results that fit the filter
             List<MediaItem> displayItems = MediaRepository.GetAllMediaItems().Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
+            // Old logic to forbid videos from being in albums: && !(mediaItem.MediaFilePath ?? "fakeFile.mp4").MediaExtension().IsSeekable()
             
             displayItems.Sort(Sorter);
             
