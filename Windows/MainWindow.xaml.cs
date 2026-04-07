@@ -43,6 +43,9 @@ namespace Filterizer2.Windows
             Width = SettingsManager.WindowWidth;
             Height = SettingsManager.WindowHeight;
             
+            Left = SettingsManager.WindowX;
+            Top = SettingsManager.WindowY;
+            
             //Initialize timer
             _timer = new DispatcherTimer
             {
@@ -61,6 +64,8 @@ namespace Filterizer2.Windows
 	        SettingsManager.SetTheme(ThemeSelectorBox.SelectedIndex);
 	        SettingsManager.SetWindowHeight(Height);
 	        SettingsManager.SetWindowWidth(Width);
+	        SettingsManager.SetWindowX(Left);
+	        SettingsManager.SetWindowY(Top);
 	        SettingsManager.Save();
 	        base.OnClosing(e);
         }
@@ -223,7 +228,7 @@ namespace Filterizer2.Windows
         private Brush MediaBorderBrush = Brushes.LightGray;
         private Brush AlbumBorderBrush = Brushes.LightBlue;
     
-        private void MediaListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void MediaListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             switch (CurrentlySelectedItem)
             {
@@ -262,6 +267,7 @@ namespace Filterizer2.Windows
 
         private void SetAlbumTray()
         {
+	        ignoreOneMove = true;
             AlbumTray.Visibility = Visibility.Visible;
             DeleteAlbumButton.IsEnabled = true;
             EditAlbumButton.IsEnabled = true;
@@ -269,6 +275,7 @@ namespace Filterizer2.Windows
 
         private void SetMediaTray()
         {
+	        ignoreOneMove = true;
 	        MediaTray.Visibility = Visibility.Visible;
             DeleteMediaButton.IsEnabled = true;
             EditMediaButton.IsEnabled = true;
@@ -277,6 +284,7 @@ namespace Filterizer2.Windows
         
         private void SetHiddenAlbumTray()
         {
+	        ignoreOneMove = true;
 	        AlbumTray.Visibility = Visibility.Collapsed;
             DeleteAlbumButton.IsEnabled = false;
             EditAlbumButton.IsEnabled = false;
@@ -284,6 +292,7 @@ namespace Filterizer2.Windows
 
         private void SetHiddenMediaTray()
         {
+	        ignoreOneMove = true;
 	        MediaTray.Visibility = Visibility.Collapsed;
             DeleteMediaButton.IsEnabled = false;
             EditMediaButton.IsEnabled = false;
@@ -357,8 +366,8 @@ namespace Filterizer2.Windows
 
         private void HideMedia()
         {
-            ImageView.Visibility = Visibility.Collapsed;
-            VlcPlayer.Visibility = Visibility.Collapsed;
+            ImageView.Visibility = Visibility.Hidden;
+            VlcPlayer.Visibility = Visibility.Hidden;
             ControlTray.Visibility = Visibility.Collapsed;
             PausePlayer();
             if (CurrentPlayer != null)
@@ -369,7 +378,7 @@ namespace Filterizer2.Windows
             _currentShownExtension = Unsupported;
         }
     
-        private void ShowMedia(string filePath)
+        private async void ShowMedia(string filePath)
         {
 	        
             bool mustEndInit = false;
@@ -378,9 +387,15 @@ namespace Filterizer2.Windows
                 ImageView.BeginInit();
                 mustEndInit = true;
             }
+
+            if (!VlcPlayer.IsInitialized)
+            {
+	            return;
+            }
         
             HideMedia();
         
+            // AnimationBehavior.SetSourceUri(ImageView, null);
         
         
             filePath = Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media"), filePath);
@@ -413,9 +428,9 @@ namespace Filterizer2.Windows
 			                MessageBoxButton.OK, MessageBoxImage.Error);
 		                break;
 	                }
-	                PlayPlayer(new Uri(filePath));
-                    VlcPlayer.Visibility = Visibility.Visible;
-                    ControlTray.Visibility = Visibility.Visible;
+	                VlcPlayer.Visibility = Visibility.Visible;
+	                ControlTray.Visibility = Visibility.Visible;
+	                await PlayPlayer(new Uri(filePath));
                     CurrentPlayer.Audio.IsMute = false;
                     break;
                 default:
@@ -433,19 +448,62 @@ namespace Filterizer2.Windows
         private void PausePlayer()
         {
 	        CurrentPlayer?.Pause();
-	        if(!hidingMedia) TogglePlayButton.Content = "Play";
+	        if(!isFullPaneMode) TogglePlayButton.Content = "Play";
         }
-        private void PlayPlayer(Uri? mediaFileUri = null)
+        private async Task PlayPlayer(Uri? mediaFileUri = null)
         {
 	        if (mediaFileUri != null)
 	        {
-		        CurrentPlayer?.Play(mediaFileUri);
+		        if (_selectionCts != null)
+		        {
+			        await _selectionCts.CancelAsync();
+		        }
+		        _selectionCts = new CancellationTokenSource();
+		        var token = _selectionCts.Token;
+		        
+		        try
+		        {
+			        await Task.Delay(150, token);
+
+			        if (token.IsCancellationRequested)
+				        return;
+
+			        await PlayAsync(mediaFileUri);
+		        }
+		        catch (TaskCanceledException)
+		        {
+			        //Expected exception when user scrolls fast
+		        }
 	        }
 	        else
 	        {
 		        CurrentPlayer?.Play();
 	        }
-	        if(!hidingMedia) TogglePlayButton.Content = "Pause";
+	        if(!isFullPaneMode) TogglePlayButton.Content = "Pause";
+        }
+        
+        private CancellationTokenSource? _selectionCts;
+        private readonly SemaphoreSlim _playLock = new SemaphoreSlim(1, 1);
+        
+        /// <summary>
+        /// Unpauses the video or loads a new one. If mediaFileUri is not null, you should await this function.
+        /// </summary>
+        /// <param name="mediaFileUri"></param>
+        public async Task PlayAsync(Uri mediaFileUri)
+        {
+	        await _playLock.WaitAsync();
+	        try
+	        {
+		        var mediaPlayer = VlcPlayer?.SourceProvider?.MediaPlayer;
+		        if (mediaPlayer == null)
+			        return;
+
+		        mediaPlayer.Play(mediaFileUri);
+	        }
+	        finally
+	        {
+		        _playLock.Release();
+	        }
         }
         
         private void CreateAlbum(List<MediaItem>? startingItems = null)
@@ -568,7 +626,7 @@ namespace Filterizer2.Windows
 	        }
 	        else
 	        {
-		        PlayPlayer();
+		        _ = PlayPlayer();
 	        }
         }
 
@@ -597,7 +655,7 @@ namespace Filterizer2.Windows
         
         private void Timer_Tick(object? sender, EventArgs e)
         {
-	        if (CurrentPlayer is { Length: > 0 } && !hidingMedia)
+	        if (CurrentPlayer is { Length: > 0 } && !isFullPaneMode)
 	        {
 		        // Update the slider
 		        VideoSeekBar.Maximum = CurrentPlayer.Length;
@@ -616,26 +674,25 @@ namespace Filterizer2.Windows
 	            // double y = e.GetPosition(Window).Y;
 	            // bool shouldShowTray = (x < Window.ActualWidth / 6) | y > Window.ActualHeight * .9;
 
-	            bool shouldShowTray = Environment.TickCount - lastMoveTime < 3000;
-
-	            if (hidingMedia && shouldShowTray)
-	            {
-		            MediaListBoxColumnDefinition.Width = new GridLength(shouldShowTray ? 200 : 0);
-		            MediaListBox.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
-		            MediaControlPanel.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
-		            ignoreOneMove = true;
-		            hidingMedia = false;
-	            }
-	            
-	            if (!hidingMedia && !shouldShowTray)
-	            {
-		            MediaListBoxColumnDefinition.Width = new GridLength(shouldShowTray ? 200 : 0);
-		            MediaListBox.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
-		            MediaControlPanel.Visibility = shouldShowTray ? Visibility.Visible : Visibility.Collapsed;
-		            ignoreOneMove = true;
-		            hidingMedia = true;
-	            }
+	            bool shouldBeFullPane = Environment.TickCount - lastMoveTime > 3000;
+	            SetFullPaneMode(shouldBeFullPane);
             }
+        }
+        
+        private bool SetFullPaneMode(bool fullPaneMode)
+        {
+	        if (fullPaneMode == isFullPaneMode)
+	        {
+		        return false;
+	        }
+
+	        MediaListBoxColumnDefinition.Width = new GridLength(!fullPaneMode ? 200 : 0);
+	        MediaListBox.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
+	        MediaControlPanel.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
+	        MetaToolbar.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
+	        ignoreOneMove = true;
+	        isFullPaneMode = fullPaneMode;
+	        return true;
         }
 
         private void VideoSeekBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -669,7 +726,7 @@ namespace Filterizer2.Windows
         {
             if (_wasPlayingBeforeSeek)
             {
-                PlayPlayer();
+                _ = PlayPlayer();
             }
         }
         
@@ -684,7 +741,7 @@ namespace Filterizer2.Windows
 	        if (CurrentPlayer == null) return;
             if (CurrentPlayer.State != MediaStates.Ended) return;
             CurrentPlayer.SetMedia(CurrentPlayer.GetMedia().Mrl);
-            PlayPlayer();
+            _ = PlayPlayer();
         }
 
         private void MediaFullscreenButton_OnClick(object sender, RoutedEventArgs e)
@@ -723,11 +780,15 @@ namespace Filterizer2.Windows
         private void SetFullscreen(bool fullscreen)
         {
 	        if (fullscreen == _isFullscreen) return;
+
+	        SetFullPaneMode(false);
+	        
 	        _isFullscreen = fullscreen;
 
 	        _savedSorterValue = SorterSelectorBox.SelectedIndex;
 	        _savedThemeValue = ThemeSelectorBox.SelectedIndex;
 	        _savedMediaValue = MediaListBox.SelectedIndex;
+
 	        
 	        
 	        Visibility vis;
@@ -735,13 +796,13 @@ namespace Filterizer2.Windows
 	        {
 		        _nonFullscreenWindowState = WindowState;
 		        
-		        vis = Visibility.Collapsed;
+		        // vis = Visibility.Collapsed;
 		        WindowStyle = WindowStyle.None;
 		        WindowState = WindowState.Maximized;
 	        }
 	        else
 	        {
-		        vis = Visibility.Visible;
+		        // vis = Visibility.Visible;
 		        WindowState = _nonFullscreenWindowState;
 		        WindowStyle = WindowStyle.SingleBorderWindow;
 	        
@@ -754,12 +815,12 @@ namespace Filterizer2.Windows
 		        }
 
 	        }
-
-	        MediaListBoxColumnDefinition.Width = new GridLength(fullscreen ? 0 : 200);
-
-	        MediaControlPanel.Visibility = vis;
-	        MediaListBox.Visibility = vis;
-	        MetaToolbar.Visibility = vis;
+	        
+	        // MediaListBoxColumnDefinition.Width = new GridLength(fullscreen ? 0 : 200);
+	        //
+	        // MediaControlPanel.Visibility = vis;
+	        // MediaListBox.Visibility = vis;
+	        // MetaToolbar.Visibility = vis;
 
         }
 
@@ -800,28 +861,19 @@ namespace Filterizer2.Windows
 			        e.Handled = true;
 			        break;
 		        }
-	        }
-        }
-        
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-	        OnUserRetakingControl();
-	        
-	        switch (e.Key)
-	        {
 		        case Key.Escape:
-			        {
+		        {
 				        
-				        SetFullscreen(false);
-				        e.Handled = true;
-				        break;
-			        }
+			        SetFullscreen(false);
+			        e.Handled = true;
+			        break;
+		        }
 		        case Key.F:
-			        {
-				        SetFullscreen(true);
-				        e.Handled = true;
-				        break;
-			        }
+		        {
+			        SetFullscreen(true);
+			        e.Handled = true;
+			        break;
+		        }
 		        case Key.Up or Key.PageUp:
 		        {
 			        if (MediaListBox.SelectedIndex > 0)
@@ -829,7 +881,6 @@ namespace Filterizer2.Windows
 				        MediaListBox.SelectedIndex -= 1;
 				        
 				        MediaListBox.ScrollIntoView(MediaListBox.SelectedItem);
-				        ignoreOneMove = true;
 			        }
 			        e.Handled = true;
 			        break;
@@ -841,7 +892,6 @@ namespace Filterizer2.Windows
 				        MediaListBox.SelectedIndex++;
         
 				        MediaListBox.ScrollIntoView(MediaListBox.SelectedItem);
-				        ignoreOneMove = true;
 			        }
 			        e.Handled = true;
 			        break;
@@ -902,7 +952,7 @@ namespace Filterizer2.Windows
 
         private bool ignoreOneMove = false;
         private int lastMoveTime = -1;
-        private bool hidingMedia = false;
+        private bool isFullPaneMode = false;
         
         private void MainWindow_OnMouseMove(object sender, MouseEventArgs e)
         {
@@ -914,6 +964,12 @@ namespace Filterizer2.Windows
 		        return;
 	        }
 	        lastMoveTime = Environment.TickCount;
+        }
+
+        private void MediaViews_OnSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+	        //Sometimes gifs and videos take a while to load, meaning they resize unexpectedly late. It ignores the next move.
+	        ignoreOneMove = true;
         }
     }
 }

@@ -6,7 +6,6 @@
         xmlns:filterizer2="clr-namespace:Filterizer2"
         Title="Filterizer2" Height="675" Width="1200"
         PreviewKeyDown="MainWindow_OnPreviewKeyDown"
-        KeyDown="Window_KeyDown"
         MouseMove="MainWindow_OnMouseMove">
     <Window.Resources>
         <!-- DataTemplate for MediaItem -->
@@ -101,8 +100,8 @@
                 
                 <Border Grid.Row="0" x:Name="MediaBorder" BorderBrush="LightGray" BorderThickness="0">
                     <Grid>
-                        <wpf:VlcControl x:Name="VlcPlayer" Visibility="Hidden" />
-                        <Image x:Name="ImageView" Visibility="Collapsed"/>
+                        <wpf:VlcControl Grid.Column="0" Grid.Row="0" x:Name="VlcPlayer" SizeChanged="MediaViews_OnSizeChanged" Visibility="Hidden" />
+                        <Image Grid.Column="0" Grid.Row="0" x:Name="ImageView" SizeChanged="MediaViews_OnSizeChanged" Visibility="Hidden"/>
                     </Grid>
                 </Border>
                 

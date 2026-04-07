@@ -8,9 +8,6 @@
     <SolidColorBrush x:Key="AccentDisabledBrush" Color="#2B0022"/>
     <SolidColorBrush x:Key="SliderThumbBrush" Color="#5A0060"/>
     <SolidColorBrush x:Key="SliderThumbHoverBrush" Color="#7A0090"/>
-    <SolidColorBrush x:Key="DEBUGBRUSHc" Color="Blue"/>
-    <SolidColorBrush x:Key="DEBUGBRUSHf" Color="DarkOrange"/>
-    <SolidColorBrush x:Key="DEBUGBRUSHg" Color="ForestGreen"/>
     
     <Style x:Key="TransparentRepeatButton" TargetType="RepeatButton">
         <Setter Property="Background" Value="Transparent"/>
@@ -61,7 +58,6 @@
                                        VerticalAlignment="Center"/>
                             </Track.Thumb>
 
-                            <!-- Optional: filled and remaining track -->
                             <Track.DecreaseRepeatButton >
                                 <RepeatButton Command="Slider.DecreaseLarge"
                                               Style="{StaticResource TransparentRepeatButton}"/>
@@ -220,25 +216,15 @@
     </Style>
     
     <!-- SrollViewer ScrollBar Repeat Buttons (at each end) -->
-        <Style x:Key="ScrollBarLineButton" TargetType="{x:Type RepeatButton}">
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="OverridesDefaultStyle" Value="true"/>
-            <Setter Property="Focusable" Value="false"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type RepeatButton}">
-                        <Border
-          Name="Border"
-          Margin="1"
-          CornerRadius="2"
-          Background="{StaticResource AccentBrush}"
-          BorderBrush="{StaticResource AccentBrush}"
-          BorderThickness="1">
-            <Path
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Fill="{StaticResource BackgroundBrush}"
-            Data="{Binding Path=Content,
+    <Style x:Key="ScrollBarLineButton" TargetType="{x:Type RepeatButton}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="OverridesDefaultStyle" Value="true"/>
+        <Setter Property="Focusable" Value="false"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Border Name="Border" Margin="1" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1">
+            <Path HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{StaticResource BackgroundBrush}" Data="{Binding Path=Content,
                 RelativeSource={RelativeSource TemplatedParent}}" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -248,15 +234,13 @@
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="false">
                                 <Setter Property="Foreground"
-                                Value="{StaticResource DEBUGBRUSHc}"/>
+                                Value="{StaticResource AccentHoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- SrollViewer ScrollBar Repeat Buttons (The part in the middle, 
-             not the thumb the long area between the buttons ) -->
         <Style x:Key="ScrollBarPageButton" TargetType="{x:Type RepeatButton}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="true"/>
@@ -270,8 +254,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- ScrollViewer ScrollBar Thumb, that part that can be dragged
-            up/down or left/right Buttons -->
         <Style x:Key="ScrollBarThumb" TargetType="{x:Type Thumb}">
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="OverridesDefaultStyle" Value="true"/>
@@ -280,11 +262,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
-                        <Border
-          CornerRadius="2"
-          Background="{TemplateBinding Background}"
-          BorderBrush="{TemplateBinding BorderBrush}"
-          BorderThickness="1" />
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" />
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -300,7 +278,6 @@
                 </Grid.RowDefinitions>
                 <Border
       Grid.RowSpan="3"
-      CornerRadius="2"
       Background="{StaticResource BackgroundBrush}" />
                 <RepeatButton
       Grid.Row="0"
@@ -349,7 +326,6 @@
                 </Grid.ColumnDefinitions>
                 <Border
       Grid.ColumnSpan="3"
-      CornerRadius="2"
       Background="{StaticResource BackgroundBrush}" />
                 <RepeatButton
       Grid.Column="0"
@@ -370,8 +346,8 @@
                         <Thumb
           Style="{StaticResource ScrollBarThumb}"
           Margin="0,1,0,1"
-          Background="{StaticResource DEBUGBRUSHf}"
-          BorderBrush="{StaticResource DEBUGBRUSHg}" />
+          Background="{StaticResource AccentHoverBrush}"
+          BorderBrush="{StaticResource AccentHoverBrush}" />
                     </Track.Thumb>
                     <Track.IncreaseRepeatButton>
                         <RepeatButton
@@ -406,74 +382,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-    
-    <!-- <Style TargetType="ScrollBar"> -->
-    <!--     <Setter Property="Width" Value="16"/> -->
-    <!--     <Setter Property="Background" Value="{DynamicResource AccentBrush}"/> -->
-    <!--     <Setter Property="Template"> -->
-    <!--         <Setter.Value> -->
-    <!--             <ControlTemplate TargetType="ScrollBar"> -->
-    <!--                 <Grid x:Name="Root" Background="{TemplateBinding Background}"> -->
-    <!--                     <Grid.RowDefinitions> -->
-    <!--                         <RowDefinition Height="Auto"/> -->
-    <!--                         <RowDefinition Height="*"/> -->
-    <!--                         <RowDefinition Height="Auto"/>  -->
-    <!--                     </Grid.RowDefinitions> -->
-    <!-- -->
-    <!--                     ~1~ Decrease Button @1@ -->
-    <!--                     <RepeatButton x:Name="PART_DecreaseButton" -->
-    <!--                                   Grid.Row="0" -->
-    <!--                                   Height="16" -->
-    <!--                                   Content="▲" -->
-    <!--                                   Background="{DynamicResource AccentBrush}" -->
-    <!--                                   Foreground="{DynamicResource ForegroundBrush}" -->
-    <!--                                   Style="{StaticResource TransparentRepeatButton}"/> -->
-    <!-- -->
-    <!--                     ~1~ Track @1@ -->
-    <!--                     <Track x:Name="PART_Track" Grid.Row="1" Focusable="False" -->
-    <!--                            IsDirectionReversed="true" -->
-    <!--                            Orientation="Vertical"> -->
-    <!-- -->
-    <!--                         ~1~ Thumb @1@ -->
-    <!--                         <Track.Thumb> -->
-    <!--                             <Thumb x:Name="PART_Thumb" -->
-    <!--                                    Background="{DynamicResource SliderThumbBrush}" -->
-    <!--                                    BorderBrush="{DynamicResource ForegroundBrush}" -->
-    <!--                                    BorderThickness="1" -->
-    <!--                                    Height="16"/> -->
-    <!--                         </Track.Thumb> -->
-    <!-- -->
-    <!--                         ~1~ Decrease / Increase RepeatButtons inside Track (optional, set transparent) @1@ -->
-    <!--                         <Track.DecreaseRepeatButton> -->
-    <!--                             <RepeatButton Style="{StaticResource TransparentRepeatButton}" Background="Transparent"/> -->
-    <!--                         </Track.DecreaseRepeatButton> -->
-    <!--                         <Track.IncreaseRepeatButton> -->
-    <!--                             <RepeatButton Style="{StaticResource TransparentRepeatButton}" Background="Transparent"/> -->
-    <!--                         </Track.IncreaseRepeatButton> -->
-    <!-- -->
-    <!--                     </Track> -->
-    <!-- -->
-    <!--                     ~1~ Increase Button @1@ -->
-    <!--                     <RepeatButton x:Name="PART_IncreaseButton" -->
-    <!--                                   Grid.Row="2" -->
-    <!--                                   Height="16" -->
-    <!--                                   Content="▼" -->
-    <!--                                   Background="{DynamicResource AccentBrush}" -->
-    <!--                                   Foreground="{DynamicResource ForegroundBrush}" -->
-    <!--                                   Style="{StaticResource TransparentRepeatButton}"/> -->
-    <!--                 </Grid> -->
-    <!-- -->
-    <!--                 <ControlTemplate.Triggers> -->
-    <!--                     <Trigger Property="IsMouseOver" Value="True"> -->
-    <!--                         <Setter TargetName="PART_Thumb" Property="Background" Value="{DynamicResource SliderThumbHoverBrush}"/> -->
-    <!--                         <Setter TargetName="PART_DecreaseButton" Property="Background" Value="{DynamicResource SliderThumbHoverBrush}"/> -->
-    <!--                         <Setter TargetName="PART_IncreaseButton" Property="Background" Value="{DynamicResource SliderThumbHoverBrush}"/> -->
-    <!--                     </Trigger> -->
-    <!--                 </ControlTemplate.Triggers> -->
-    <!--             </ControlTemplate> -->
-    <!--         </Setter.Value> -->
-    <!--     </Setter> -->
-    <!-- </Style> -->
     
     <Style TargetType="Grid">
         <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
@@ -541,7 +449,7 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Border" Property="Background" Value="{DynamicResource AccentDisabledBrush}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource DEBUGBRUSHc}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

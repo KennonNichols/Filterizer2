@@ -15,6 +15,8 @@ namespace Filterizer2
 		public static int ThemeIndex => Settings.ThemeIndex;
 		public static double WindowWidth => Settings.WindowWidth;
 		public static double WindowHeight => Settings.WindowHeight;
+		public static double WindowX => Settings.WindowX;
+		public static double WindowY => Settings.WindowY;
 
 		public static void Load()
 		{
@@ -71,6 +73,16 @@ namespace Filterizer2
 		{
 			Settings.WindowHeight = height;
 		}
+
+		public static void SetWindowX(double x)
+		{
+			Settings.WindowX = x;
+		}
+
+		public static void SetWindowY(double y)
+		{
+			Settings.WindowY = y;
+		}
 	}
 
 	public class AppSettings
@@ -80,5 +92,8 @@ namespace Filterizer2
 		// future-proofing
 		public double WindowWidth { get; set; } = 1200;
 		public double WindowHeight { get; set; } = 675;
+		
+		public double WindowX { get; set; } = 0;
+		public double WindowY { get; set; } = 0;
 	}
 }
