@@ -74,7 +74,6 @@ namespace Filterizer2.Windows
 
         private static void DeleteOrphans()
         {
-        
             string mediaDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Media");
             string thumbsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs");
 
@@ -87,15 +86,13 @@ namespace Filterizer2.Windows
                 Directory.CreateDirectory(thumbsDirectory);
             }
 
-            
-            string[] allRealMediaItems = MediaRepository.GetAllMediaItems().Select(item => Path.GetFileNameWithoutExtension(item.LocalFilename)).ToArray();
+
+            HashSet<string> allRealMediaNames = MediaRepository.GetAllMediaNames().ToHashSet();
         
         
             DeleteOrphansIn(mediaDirectory);
             DeleteOrphansIn(thumbsDirectory);
-        
-        
-
+            
             return;
         
             void DeleteOrphansIn(string directory)
@@ -104,10 +101,10 @@ namespace Filterizer2.Windows
             
                 foreach (string existingFile in existingFiles)
                 {
-                    if (allRealMediaItems.Contains(Path.GetFileNameWithoutExtension(existingFile))) continue;
+                    if (allRealMediaNames.Contains(Path.GetFileNameWithoutExtension(existingFile))) continue;
                     try
                     {
-                        File.Delete(existingFile);
+	                    File.Delete(existingFile);
                     }
                     catch (Exception ex)
                     {
@@ -276,6 +273,7 @@ namespace Filterizer2.Windows
         private void SetMediaTray()
         {
 	        ignoreOneMove = true;
+	        ignoreOneMove = true;
 	        MediaTray.Visibility = Visibility.Visible;
             DeleteMediaButton.IsEnabled = true;
             EditMediaButton.IsEnabled = true;
@@ -301,19 +299,27 @@ namespace Filterizer2.Windows
 
         public void ReloadAllMediaItems()
         {
-	        //TODO make this lazy evaled?
-	        //TODO How to do that with a sorter?
-            List<IMediaDisplayItem> displayItems = new List<IMediaDisplayItem>();
 
-            if (ShowMediaCheckbox.IsChecked == true)
-            {
-                displayItems.AddRange(MediaRepository.GetAllMediaItems());
-            }
+
+	        HashSet<int> loadedMediaIDs = new HashSet<int>();
+	        List<IMediaDisplayItem> displayItems = new List<IMediaDisplayItem>();
+	        
+	        if (ShowMediaCheckbox.IsChecked == true)
+	        {
+		        foreach (MediaItem allMediaItem in MediaRepository.GetAllMediaItems())
+		        {
+			        displayItems.Add(allMediaItem);
+			        loadedMediaIDs.Add(allMediaItem.Id);
+		        }
+	        }
+	        
             if (ShowAlbumsCheckbox.IsChecked == true)
             {
+	            
 	            List<AlbumItem> albums = AlbumRepository.GetAlbums().ToList();
+	            
                 displayItems.AddRange(albums);
-                HashSet<int> loadedMediaIDs = new HashSet<int>();
+                
                 AlbumDupePanel.Visibility = Visibility.Visible;
                 if (PreventAlbumDuplicatesCheckbox.IsChecked == true)
                 {
@@ -326,25 +332,26 @@ namespace Filterizer2.Windows
 	                displayItems.RemoveAll(item =>
 		                item is MediaItem mediaItem && loadedMediaIDs.Contains(mediaItem.Id));
                 }
+                
+                displayItems = displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
+            
+                displayItems.Sort(Sorter);
             }
             else
             {
 	            AlbumDupePanel.Visibility = Visibility.Collapsed;
             }
-            
 
-            displayItems = displayItems.Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
-            
-            displayItems.Sort(Sorter);
-            
             MediaListBox.Items.Clear();
             
-            foreach (IMediaDisplayItem mediaItem in displayItems)
+            foreach (IMediaDisplayItem mediaDisplayItem in displayItems)
             {
-                MediaListBox.Items.Add(mediaItem);
+	            MediaListBox.Items.Add(mediaDisplayItem);
             }
         }
+        
 
+        
         private VlcMediaPlayer? CurrentPlayer => VlcPlayer?.SourceProvider?.MediaPlayer;
 
         private MediaSorter Sorter = new UnsortedSorter();

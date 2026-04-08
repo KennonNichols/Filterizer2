@@ -53,6 +53,7 @@ namespace Filterizer2
 		}
 
 		public abstract string Label { get; }
+		public abstract string SQLClause { get; }
 	}
 	
 	
@@ -64,6 +65,7 @@ namespace Filterizer2
 		}
 
 		public override string Label => "Unsorted";
+		public override string SQLClause => "";
 	}
 
 	public class NumberOfTagsDescendingSorter : MediaSorter
@@ -79,6 +81,7 @@ namespace Filterizer2
 		}
 
 		public override string Label => "Tag count (desc)";
+		public override string SQLClause => "TagCount DESC";
 	}
 
 	public class NumberOfTagsAscendingSorter : MediaSorter
@@ -94,6 +97,7 @@ namespace Filterizer2
 		}
 
 		public override string Label => "Tag count (asc)";
+		public override string SQLClause => "TagCount ASC";
 	}
 
 	public class PostTimeDescendingSorter : MediaSorter
@@ -109,6 +113,7 @@ namespace Filterizer2
 		}
 
 		public override string Label => "Time added (desc)";
+		public override string SQLClause => "m.Id ASC";
 	}
 
 	public class PostTimeAscendingSorter : MediaSorter
@@ -124,6 +129,7 @@ namespace Filterizer2
 		}
 
 		public override string Label => "Time added (asc)";
+		public override string SQLClause => "m.Id DESC";
 	}
 
 	public class RandomSorter : MediaSorter
@@ -153,7 +159,8 @@ namespace Filterizer2
 		{
 			_values.Clear();
 		}
-
+		
 		public override string Label => "Random";
+		public override string SQLClause => "RANDOM()";
 	}
 }

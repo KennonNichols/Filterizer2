@@ -56,20 +56,21 @@ namespace Filterizer2.Windows
             ReloadAllMediaItems();
         }
         
+        // List<MediaItem> displayItems = MediaRepository.GetAllMediaItems().Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
+        //
+        // displayItems.Sort(Sorter);
+        //
+        // MediaListBox.Items.Clear();
+        //
+        // foreach (MediaItem mediaItem in displayItems)
+        // {
+        //     MediaListBox.Items.Add(mediaItem);
+        // }
         public void ReloadAllMediaItems()
         {
 	        // All results that fit the filter
-            List<MediaItem> displayItems = MediaRepository.GetAllMediaItems().Where(mediaItem => Filter.TestMedia(mediaItem)).ToList();
-            // Old logic to forbid videos from being in albums: && !(mediaItem.MediaFilePath ?? "fakeFile.mp4").MediaExtension().IsSeekable()
-            
-            displayItems.Sort(Sorter);
-            
-            MediaListBox.Items.Clear();
-            
-            foreach (MediaItem mediaItem in displayItems)
-            {
-                MediaListBox.Items.Add(mediaItem);
-            }
+            MediaListBox.ItemsSource =
+	            MediaRepository.GetAllMediaItems(Sorter).Where(mediaItem => Filter.TestMedia(mediaItem));
         }
 
         private void MediaListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)

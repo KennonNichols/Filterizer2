@@ -12,7 +12,7 @@ namespace Filterizer2
         {
             string fileName = Path.GetFileName(mediaFilePath);
             //Save all as jpg
-            string? thumbnailPath = Path.ChangeExtension(Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs"), fileName), ".jpg");
+            string thumbnailPath = Path.ChangeExtension(Path.Combine(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Thumbs"), fileName), ".jpg");
 
             
             if (File.Exists(thumbnailPath))

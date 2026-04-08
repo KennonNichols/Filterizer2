@@ -1,4 +1,5 @@
 using System.Data.SQLite;
+using System.IO;
 
 namespace Filterizer2
 {
@@ -22,22 +23,47 @@ namespace Filterizer2
         /// This should be the one and only place where MediaItems are stored in memory.
         /// </summary>
         private static Dictionary<int, MediaItem> _mediaCache = new Dictionary<int, MediaItem>();
+
+        public static IEnumerable<string> GetAllMediaNames()
+        {
+	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
+	        const string mediaQuery = "SELECT m.LocalFilename FROM Media m;";
+	        using var command = new SQLiteCommand(mediaQuery, connection);
+	        using var reader = command.ExecuteReader();
+            
+	        while (reader.Read())
+	        {
+		        yield return Path.GetFileNameWithoutExtension(reader["LocalFilename"].ToString()!);
+	        }
+        }
         
-        
-        public static IEnumerable<MediaItem> GetAllMediaItems()
+        public static IEnumerable<MediaItem> GetAllMediaItems(MediaSorter? sorter = null)
         {
             using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
-            // First, get all media items
-            string mediaQuery = "SELECT * FROM Media";
-            using (var command = new SQLiteCommand(mediaQuery, connection))
+            // Get sorting clause from sorter
+            string orderByClause = "";
+            if (sorter != null)
             {
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        yield return ReadRowAsMedia(reader, connection);
-                    }
-                }
+	            if (sorter.SQLClause != "")
+	            {
+		            orderByClause = $"ORDER BY {sorter.SQLClause}";
+	            }
+            }
+            string mediaQuery = $@"
+		        SELECT 
+		            m.*, COUNT(mt.TagId) AS TagCount
+		        FROM Media m
+		        LEFT JOIN MediaTags mt ON m.Id = mt.MediaId
+		        GROUP BY m.Id
+		        {orderByClause};
+		    ";
+
+            using var command = new SQLiteCommand(mediaQuery, connection);
+            using var reader = command.ExecuteReader();
+            
+            while (reader.Read())
+            {
+	            yield return ReadRowAsMedia(reader, connection);
             }
         }
         
