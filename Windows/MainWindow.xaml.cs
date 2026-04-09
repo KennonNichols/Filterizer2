@@ -948,9 +948,9 @@ namespace Filterizer2.Windows
 	        if (ThemeSelectorBox.SelectedItem is not Theme theme) return;
 	        
 	        
-	        Application.Current.Resources.MergedDictionaries.Clear();
+	        Resources.MergedDictionaries.Clear();
 
-	        Application.Current.Resources.MergedDictionaries.Add(
+	        Resources.MergedDictionaries.Add(
 		        new ResourceDictionary
 		        {
 			        Source = new Uri($"Themes/{theme.Label}.xaml", UriKind.Relative)

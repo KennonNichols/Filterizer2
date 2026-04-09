@@ -23,8 +23,8 @@
             
             <TextBox Grid.Row="0" Name="TagFilterTextBox" Width="200" Margin="0,0,0,10" TextChanged="TagFilterTextBox_TextChanged"/>
 
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="1" BorderBrush="DarkGray">
-                <ListBox Name="TagsListBox" SelectionMode="Single" MinHeight="200" BorderThickness="0"
+            <!-- <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" BorderThickness="1" BorderBrush="DarkGray"> -->
+                <ListBox Name="TagsListBox" SelectionMode="Single" MinHeight="200" BorderThickness="1" Grid.Row="1" BorderBrush="DarkGray"
                          SelectionChanged="TagsListBox_SelectionChanged">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
@@ -38,7 +38,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-            </ScrollViewer>
+            <!-- </ScrollViewer> -->
         </Grid>
 
         <!-- Right side: Tag details -->
