@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Filterizer2.Windows
 {
@@ -30,7 +31,7 @@ namespace Filterizer2.Windows
 		
 		private Dictionary<string, HashSet<int>> _tagChildrenCache = new Dictionary<string, HashSet<int>>();
 		
-		public MediaTaggingHelperWindow()
+		public MediaTaggingHelperWindow(string? mediaFilePath)
 		{
 			InitializeComponent();
 			DataContext = this;
@@ -39,6 +40,11 @@ namespace Filterizer2.Windows
 			UpdateContentForCurrentCategories();
 			_masterTags.CollectionChanged += Tags_CollectionChanged;
 			_queueTags.CollectionChanged += Tags_CollectionChanged;
+
+			if (mediaFilePath != null)
+			{
+				MediaPlayer.ShowMedia(mediaFilePath);
+			}
 		}
 
 		private ObservableCollection<TagItem>? originalWindowTags = null;
@@ -151,6 +157,7 @@ namespace Filterizer2.Windows
 			bool anyFound = false;
 			foreach (TagItem preExistingTag in _preexistingTags )
 			{
+				if (preExistingTag.Name != "Tagging_In_Progress") continue;
 				if (Equals(preExistingTag.SubCategory, _currentSubCategory))
 				{
 					anyFound = true;
@@ -411,6 +418,9 @@ namespace Filterizer2.Windows
 				TagDetails.DisplayTag(tagItem, false);
 			}
 		}
+		
+		
+
 		
 		public class TagDisplayChildingItem : INotifyPropertyChanged
 		{

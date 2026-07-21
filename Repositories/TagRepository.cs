@@ -26,8 +26,37 @@ namespace Filterizer2
         /// </summary>
         private static Dictionary<int, TagItem> _tagCache = new Dictionary<int, TagItem>();
 
+        private static TagItem? _taggingInProgressTag = null;
+        
 
         #region Getters and Search
+
+        public static bool TryGetTaggingInProgressTag(out TagItem taggingInProgressTag)
+        {
+	        if (_taggingInProgressTag != null)
+	        {
+		        taggingInProgressTag = _taggingInProgressTag;
+		        return true;
+	        }
+	        taggingInProgressTag = GetTagByNameDirectly("Tagging_In_Progress");
+	        if (taggingInProgressTag == null)
+	        {
+		        return false;
+	        }
+	        _taggingInProgressTag = taggingInProgressTag;
+	        return true;
+        }
+        private static TagItem? GetTagByNameDirectly(string name)
+        {
+	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
+	        var command = connection.CreateCommand();
+	        command.CommandText = "SELECT * FROM Tags WHERE Name = @name";
+
+	        command.Parameters.AddWithValue("@name", name);
+	        
+	        using var reader = command.ExecuteReader();
+	        return reader.Read() ? ReadRowAsTag(reader, connection) : null;
+        }
         public static bool TryGetTagById(int tagId, out TagItem tagItem)
         {
 	        //Try immediately grabbing from cache instead of requerying the database
@@ -461,6 +490,7 @@ namespace Filterizer2
             transaction.Commit();
 
             _tagCache.Remove(editingTag.Id);
+            _taggingInProgressTag = null;
         }
 
         public static void RegisterParentsOfTag(TagItem tag, SQLiteConnection connection)
@@ -499,6 +529,7 @@ namespace Filterizer2
             transaction.Commit();
 
             _tagCache.Remove(tag.Id);
+            _taggingInProgressTag = null;
         }
 
         public static void DeleteAllTags()
@@ -511,6 +542,7 @@ namespace Filterizer2
 	        transaction.Commit();
 	        
 	        _tagCache.Clear();
+	        _taggingInProgressTag = null;
         }
         #endregion
         

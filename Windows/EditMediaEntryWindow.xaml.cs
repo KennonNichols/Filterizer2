@@ -47,19 +47,15 @@ namespace Filterizer2.Windows
             };
             _mediaFilePath = mediaFilePath;
             
-            SetUp();
+            SetUp(true);
         }
 
-        private void SetUp()
+        private void SetUp(bool isMakingForFirstTime = false)
         {
             InitializeComponent();
 
             CurrentTagsItemsControl.ItemsSource = CurrentTags;
         
-            // Set the VLC library path
-            var currentDirectory = new FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).DirectoryName;
-            var libDirectory = Path.Combine(currentDirectory, "libvlc");
-            VlcPlayer.SourceProvider.CreatePlayer(new DirectoryInfo(libDirectory));
             
             LoadMediaPreview();
             TitleTextBox.Text = _editingMediaItem.Title;
@@ -72,6 +68,28 @@ namespace Filterizer2.Windows
              
             //Generate the thumbnail
             ThumbnailGenerator.GenerateOrGetThumbnail(_mediaFilePath);
+            
+            
+            //When creating a new media item, ask if the user wants to use advanced tagger
+            if (isMakingForFirstTime)
+            {
+	            if (MessageBox.Show(
+		                "Do you want to use the advanced tagger?",
+		                "Flow tagger",
+		                MessageBoxButton.YesNo,
+		                MessageBoxImage.Question
+	                ) == MessageBoxResult.Yes)
+	            {
+		            OpenAdvancedTagger();
+	            }
+	            else
+	            {
+		            if (TagRepository.TryGetTaggingInProgressTag(out TagItem taggingInProgressTag))
+		            {
+			            _currentTags.Add(taggingInProgressTag);
+		            }
+	            }
+            }
         }
         
         public MediaItem GetMediaItem()
@@ -81,7 +99,10 @@ namespace Filterizer2.Windows
         
         private void LoadMediaPreview()
         {
-            ShowMedia();
+	        if (_mediaFilePath != null)
+	        {
+		        MediaPlayer.ShowMedia(_mediaFilePath);
+	        }
         }
 
         protected override void OnClosed(EventArgs e)
@@ -99,60 +120,6 @@ namespace Filterizer2.Windows
         {
             DialogResult = true;
             Close();
-        }
-        
-        private void ShowMedia()
-        {
-            bool mustEndInit = false;
-            if (!ImageView.IsInitialized)
-            {
-                ImageView.BeginInit();
-                mustEndInit = true;
-            }
-            
-            // Clear previous media
-            ImageView.Visibility = Visibility.Collapsed;
-            VideoPlayer.Visibility = Visibility.Collapsed;
-            VlcPlayer.Visibility = Visibility.Collapsed;
-            VlcPlayer.SourceProvider.MediaPlayer.Pause();
-            
-            
-    
-            var extension = Path.GetExtension(_mediaFilePath).ToLower();
-            switch (extension)
-            {
-                case ".png" or ".jpg":
-                {
-                    var image = new BitmapImage(new Uri(_mediaFilePath));
-                    ImageView.Source = image;
-                    ImageView.Visibility = Visibility.Visible;
-                    break;
-                }
-                case ".webp":
-                    ImageView.Source = ImageHelpers.ConvertBitmapToBitmapImage(new FileInfo(_mediaFilePath).NewBitmap());
-                    ImageView.Visibility = Visibility.Visible;
-                    break;
-                case ".gif":
-                {
-                    AnimationBehavior.SetSourceUri(ImageView, new Uri(_mediaFilePath));
-                    AnimationBehavior.SetRepeatBehavior(ImageView, System.Windows.Media.Animation.RepeatBehavior.Forever);
-                    ImageView.Visibility = Visibility.Visible;
-                    break;
-                }
-                case ".webm" or ".mp4":
-                    VlcPlayer.SourceProvider.MediaPlayer.Play(new Uri(_mediaFilePath));
-                    VlcPlayer.Visibility = Visibility.Visible;
-                    break;
-                default:
-                    MessageBox.Show("Unsupported media format", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    break;
-            }
-            
-            
-            if (mustEndInit)
-            {
-                ImageView.EndInit();
-            }
         }
         
         
@@ -204,16 +171,23 @@ namespace Filterizer2.Windows
         private void OpenTagDictionaryButton_Click(object sender, RoutedEventArgs e)
         {
 	        TagDictionaryWindow tagDictionaryWindow = new TagDictionaryWindow();
+	        MediaPlayer.PausePlayer();
 	        tagDictionaryWindow.Show();
         }
 
         private void OpenAdvancedTaggerButton_Click(object sender, RoutedEventArgs e)
         {
-	        MediaTaggingHelperWindow mediaTaggerWindow = new MediaTaggingHelperWindow();
-	        mediaTaggerWindow.SetStartingTagList(ref _currentTags);
-	        mediaTaggerWindow.Show();
+	        OpenAdvancedTagger();
         }
 
+        private void OpenAdvancedTagger()
+        {
+	        MediaTaggingHelperWindow mediaTaggerWindow = new MediaTaggingHelperWindow(_mediaFilePath);
+	        mediaTaggerWindow.SetStartingTagList(ref _currentTags);
+	        MediaPlayer.PausePlayer();
+	        mediaTaggerWindow.ShowDialog();
+        }
+        
         // public void SetTagList(IEnumerable<TagItem> tags)
         // {
 	       //  currentTags.Clear();
@@ -233,6 +207,7 @@ namespace Filterizer2.Windows
         {
 	        if (sender is not MenuItem { CommandParameter: TagItem tagToView }) return;
 	        var tagHierarchyWindow = new ViewMasterTagHierarchy(tagToView);
+	        MediaPlayer.PausePlayer();
 	        tagHierarchyWindow.ShowDialog();
         }
     }

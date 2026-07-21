@@ -92,21 +92,61 @@
             </Grid.ColumnDefinitions>
             
             <ListBox x:Name="MediaListBox" BorderThickness="0" Grid.Column="0" ItemTemplateSelector="{StaticResource MediaItemTemplateSelector}" SelectionChanged="MediaListBox_SelectionChanged" LayoutUpdated="AnyBearingPanel_OnSizeChanged"></ListBox>
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto" x:Name="MediaControlPanelRowDefinition"/>
+                    <RowDefinition Height="Auto" x:Name="MediaEditPanelRowDefinition"/>
                 </Grid.RowDefinitions>
                 
-                <Border Grid.Row="0" x:Name="MediaBorder" BorderBrush="LightGray" BorderThickness="0">
-                    <Grid>
-                        <wpf:VlcControl Grid.Column="0" Grid.Row="0" x:Name="VlcPlayer" SizeChanged="MediaViews_OnSizeChanged" Visibility="Hidden" />
-                        <Image Grid.Column="0" Grid.Row="0" x:Name="ImageView" SizeChanged="MediaViews_OnSizeChanged" Visibility="Hidden"/>
-                    </Grid>
-                </Border>
+                <!-- Media player and control bar -->
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto" x:Name="MediaControlPanelRowDefinition"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Media player -->
+                    <Border Grid.Row="0" x:Name="MediaBorder" BorderBrush="LightGray" BorderThickness="0">
+                        <Grid>
+                            <wpf:VlcControl Grid.Column="0" Grid.Row="0" x:Name="VlcPlayer" SizeChanged="MediaViews_OnSizeChanged" Visibility="Hidden" />
+                            <Image Grid.Column="0" Grid.Row="0" x:Name="ImageView" SizeChanged="MediaViews_OnSizeChanged" Visibility="Hidden"/>
+                        </Grid>
+                    </Border>
+                    <!-- Media controls -->
+                    <StackPanel Orientation="Vertical" Grid.Row="1" x:Name="MediaControlPanel">
+                        <StackPanel x:Name="ControlTray" Orientation="Horizontal" Height="50" VerticalAlignment="Bottom" Visibility="Collapsed">
+                            <Button Content="Play" x:Name="TogglePlayButton" Click="TogglePlayButton_Click" Margin="5" MinWidth="70"/>
+                            <Button Content="&lt;&lt; 10s" Click="RewindButton_Click" Margin="5" />
+                            <Button Content="&gt;&gt; 10s" Click="ForwardButton_Click" Margin="5" />
+                                
+                            <!-- Seek bar -->
+                            <Slider x:Name="VideoSeekBar" Width="200" Margin="5" PreviewMouseDown="SeekBar_PreviewMouseDown" PreviewMouseUp="SeekBar_PreviewMouseUp" ValueChanged="VideoSeekBar_ValueChanged"/>
                 
-                <StackPanel Orientation="Vertical" Grid.Row="1" x:Name="MediaControlPanel">
-                    <StackPanel Orientation="Horizontal">
+                            <!-- Timestamp -->
+                            <TextBlock x:Name="TimerText" Margin="5" VerticalAlignment="Center" Width="100" Text="00:00 / 00:00"/>
+                            
+                              
+                            <!-- Volume bar -->
+                            <Slider x:Name="VolumeBar" Width="200" Margin="5" ValueChanged="VolumeBar_OnValueChanged" Value="100" Maximum="200" TickPlacement="BottomRight" TickFrequency="100" IsSnapToTickEnabled="False"/>
+
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+                
+                <StackPanel Grid.Row="1" Orientation="Vertical">
+                    
+                    <StackPanel Orientation="Horizontal" x:Name="MediaEditPanel">
                         <Button Content="Fullscreen" Name="MediaFullscreenButton" IsEnabled="True" Margin="20,5,10,5" Click="MediaFullscreenButton_OnClick"/>
                         <StackPanel Orientation="Horizontal" x:Name="MediaTray">
                             <Button Content="Edit" Name="EditMediaButton" IsEnabled="False" Margin="20,5,10,5" Click="EditMediaButton_Click"/>
@@ -115,24 +155,7 @@
                         </StackPanel>
                     </StackPanel>
                     
-                    <StackPanel x:Name="ControlTray" Orientation="Horizontal" Height="50" VerticalAlignment="Bottom" Visibility="Collapsed">
-                        <Button Content="Play" x:Name="TogglePlayButton" Click="TogglePlayButton_Click" Margin="5" MinWidth="70"/>
-                        <Button Content="&lt;&lt; 10s" Click="RewindButton_Click" Margin="5" />
-                        <Button Content="&gt;&gt; 10s" Click="ForwardButton_Click" Margin="5" />
-                            
-                        <!-- Seek bar -->
-                        <Slider x:Name="VideoSeekBar" Width="200" Margin="5" PreviewMouseDown="SeekBar_PreviewMouseDown" PreviewMouseUp="SeekBar_PreviewMouseUp" ValueChanged="VideoSeekBar_ValueChanged"/>
-            
-                        <!-- Timestamp -->
-                        <TextBlock x:Name="TimerText" Margin="5" VerticalAlignment="Center" Width="100" Text="00:00 / 00:00"/>
-                        
-                          
-                        <!-- Volume bar -->
-                        <Slider x:Name="VolumeBar" Width="200" Margin="5" ValueChanged="VolumeBar_OnValueChanged" Value="100" Maximum="200" TickPlacement="BottomRight" TickFrequency="100" IsSnapToTickEnabled="False"/>
-
-                    </StackPanel>
-                    
-                    <StackPanel Orientation="Vertical" Name="AlbumTray" Visibility="Collapsed">
+                    <StackPanel Orientation="Vertical" x:Name="AlbumTray" Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal">
                             <Button Content="&lt;" Name="LeftButton" Margin="20,5,10,0" Click="LeftButton_Click"/>
                             <Button Content="&gt;" Name="RightButton" IsEnabled="False" Margin="20,5,10,0" Click="RightButton_Click"/>
@@ -143,7 +166,20 @@
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
+
             </Grid>
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
         </Grid>
     </Grid>
     

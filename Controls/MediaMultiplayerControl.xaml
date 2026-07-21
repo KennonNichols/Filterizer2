@@ -1,0 +1,46 @@
+<UserControl x:Class="Filterizer2.Controls.MediaMultiplayerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Filterizer2.Controls"
+             xmlns:wpf="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Media player -->
+        <Border Grid.Row="0" x:Name="MediaBorder" BorderBrush="LightGray" BorderThickness="0">
+            <Grid>
+                <wpf:VlcControl Grid.Column="0" Grid.Row="0" x:Name="VlcPlayer"
+                                Visibility="Hidden" />
+                <Image Grid.Column="0" Grid.Row="0" x:Name="ImageView"
+                       Visibility="Hidden" />
+            </Grid>
+        </Border>
+        <!-- Media controls -->
+        <StackPanel Orientation="Vertical" Grid.Row="1" x:Name="MediaControlPanel">
+            <StackPanel x:Name="ControlTray" Orientation="Horizontal" Height="50" VerticalAlignment="Bottom"
+                        Visibility="Collapsed">
+                <Button Content="Play" x:Name="TogglePlayButton" Click="TogglePlayButton_Click" Margin="5"
+                        MinWidth="70" />
+                <Button Content="&lt;&lt; 10s" Click="RewindButton_Click" Margin="5" />
+                <Button Content="&gt;&gt; 10s" Click="ForwardButton_Click" Margin="5" />
+
+                <!-- Seek bar -->
+                <Slider x:Name="VideoSeekBar" Width="200" Margin="5" PreviewMouseDown="SeekBar_PreviewMouseDown"
+                        PreviewMouseUp="SeekBar_PreviewMouseUp" ValueChanged="VideoSeekBar_ValueChanged" />
+
+
+                <!-- Volume bar -->
+                <Slider x:Name="VolumeBar" Width="200" Margin="5" ValueChanged="VolumeBar_OnValueChanged" Value="100"
+                        Maximum="200" TickPlacement="BottomRight" TickFrequency="100" IsSnapToTickEnabled="False" />
+
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

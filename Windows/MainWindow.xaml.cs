@@ -124,6 +124,7 @@ namespace Filterizer2.Windows
             
             
 
+            PausePlayer();
             if (openFileDialog.ShowDialog() != true) return;
 
             string[] fileNames = openFileDialog.FileNames;
@@ -181,8 +182,8 @@ namespace Filterizer2.Windows
 	            {
 		            // Open the NewMediaEntryWindow to get user input, only if it's a single item
 		            EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(localFilePath);
+		            PausePlayer();
 		            entryWindow.ShowDialog();
-		            
 		            // Create the MediaItem with user-provided details
 		            item = entryWindow.GetMediaItem();
 	            }
@@ -216,6 +217,7 @@ namespace Filterizer2.Windows
 			          //   MessageBoxButton.OK, MessageBoxImage.Information);
 	            // }
 	            
+	            PausePlayer();
 	            new EditAlbumWindow(null, addedItems).ShowDialog();
             
 	            ReloadAllMediaItems();
@@ -515,6 +517,7 @@ namespace Filterizer2.Windows
         
         private void CreateAlbum(List<MediaItem>? startingItems = null)
         {
+	        PausePlayer();
 	        new EditAlbumWindow(null, startingItems).ShowDialog();
             
 	        ReloadAllMediaItems();
@@ -524,11 +527,13 @@ namespace Filterizer2.Windows
         {
             TagDictionaryWindow tagDictionaryWindow = new TagDictionaryWindow();
             tagDictionaryWindow.Show();
+            PausePlayer();
         }
     
     
         private void FilterButton_Click(object sender, RoutedEventArgs e)
-        {
+        {            
+	        PausePlayer();
             new FilterWindow(this, Filter).ShowDialog();
         }
         
@@ -566,6 +571,7 @@ namespace Filterizer2.Windows
         {
             if (CurrentlySelectedItem is not MediaItem mediaItem) return;
             EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(mediaItem);
+            PausePlayer();
             entryWindow.ShowDialog();
 
             MediaRepository.UpdateMedia(mediaItem);
@@ -593,6 +599,7 @@ namespace Filterizer2.Windows
         private void EditAlbumButton_Click(object sender, RoutedEventArgs e)
         {
             if (CurrentlySelectedItem is not AlbumItem albumItem) return;
+            PausePlayer();
             new EditAlbumWindow(albumItem).ShowDialog();
             
             ReloadAllMediaItems();
@@ -696,6 +703,8 @@ namespace Filterizer2.Windows
 	        MediaListBoxColumnDefinition.Width = new GridLength(!fullPaneMode ? 200 : 0);
 	        MediaListBox.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
 	        MediaControlPanel.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
+	        AlbumTray.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
+	        MediaEditPanel.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
 	        MetaToolbar.Visibility = !fullPaneMode ? Visibility.Visible : Visibility.Collapsed;
 	        ignoreOneMove = true;
 	        isFullPaneMode = fullPaneMode;
