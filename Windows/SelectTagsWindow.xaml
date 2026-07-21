@@ -28,7 +28,7 @@
             </ListBox>
             
             <Border BorderBrush="Gray" BorderThickness="1" Padding="10" CornerRadius="5">
-                <TextBlock Name="TagDescriptionBox" MinHeight="50"/>
+                <TextBlock Name="TagDescriptionBox" TextWrapping="Wrap" MinHeight="50"/>
             </Border>
         </StackPanel>
 

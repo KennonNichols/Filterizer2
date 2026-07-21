@@ -20,8 +20,8 @@ namespace Filterizer2.Windows
 			List<TransientDisplayItem> transientDisplayTags = (from object allValue in Tags.GetAllValues() select new TransientDisplayCategoryItem((TagCategory)allValue)).Cast<TransientDisplayItem>().ToList();
 
 
-			//Add all tags with no parent
-			foreach (var unorderedTag in unorderedTags.Where(unorderedTag => unorderedTag.ParentIDs.Count == 0))
+			//Add all tags with no parent OR that are members of a special category
+			foreach (var unorderedTag in unorderedTags.Where(unorderedTag => !unorderedTag.IsChildable || unorderedTag.ImmediateParentIDs.Count == 0))
 			{
 				//insert somewhere
 				int categoryLocation = transientDisplayTags.FindIndex(item =>
@@ -43,7 +43,7 @@ namespace Filterizer2.Windows
 
 				foreach (var unorderedTag in unorderedTags)
 				{
-					TagItem primaryParent = unorderedTag.ParentTags.First();
+					TagItem primaryParent = unorderedTag.ImmediateParentTags.First();
 					if (addedTags.All(item => item.Id != primaryParent.Id)) continue;
 					int parentLocation = transientDisplayTags.FindIndex(item =>
 						item is TransientDisplayTagItem tagItem && tagItem.Tag.Id == primaryParent.Id);
@@ -161,6 +161,10 @@ namespace Filterizer2.Windows
 					return;
 				}
 				newTag.Category = category;
+
+				TagSubCategory subCategory = category.GetSubCategoryByName(transientTag.SubCategoryName);
+				newTag.SubCategory = subCategory;
+				
 				//Record the tag for building relations
 				newlyAddedTagItemsByName.Add(transientTag.Name, newTag);
 				//Records the transient tag used to build it, so we can find the parents in the next loop.
@@ -240,7 +244,7 @@ namespace Filterizer2.Windows
 				foreach (TagItem transientParent in relatedTransientTags[tagItem].TransientParents)
 				{
 					//In the last loop any tags with an invalid ID set their IDs with TagRepository.AddTag(), so it should work fine to access at this point
-					tagItem.ParentIDs.Add(transientParent.Id);
+					tagItem.ImmediateParentIDs.Add(transientParent.Id);
 				}
 				//This only works because every tag either had their parental relationships destroyed in the last loop, or never had parents to begin with
 				TagRepository.RegisterParentsOfTag(tagItem, connection);
@@ -286,11 +290,21 @@ namespace Filterizer2.Windows
 	            
 	            //Extract description, removing it from the line completely first
 	            string description = "";
-	            var descMatch = MyRegex().Match(line);
+	            var descMatch = DescriptionRegex().Match(line);
 	            if (descMatch.Success)
 	            {
 	                description = descMatch.Groups[1].Value;
 	                line = line.Remove(descMatch.Index, descMatch.Length);
+	            }
+	            
+	            
+	            //Extract subcategory name, removing it from the line completely first
+	            string subCategoryName = "";
+	            var subMatch = SubCategoryRegex().Match(line);
+	            if (subMatch.Success)
+	            {
+		            subCategoryName = subMatch.Groups[0].Value;
+		            line = line.Remove(subMatch.Index - 1, subMatch.Length + 1);
 	            }
 
 	            var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -317,6 +331,7 @@ namespace Filterizer2.Windows
 	                Aliases = new List<string>(),
 	                ParentNames = new List<string>(),
 	                Description = description,
+	                SubCategoryName = subCategoryName,
 	                LineNumber = lineNumber
 	            };
 
@@ -383,13 +398,17 @@ namespace Filterizer2.Windows
 	    }
 
         [GeneratedRegex("\"([^\"]*)\"")]
-        private static partial Regex MyRegex();
+        private static partial Regex DescriptionRegex();
+        
+        [GeneratedRegex(@"(?<=\$)[^\s]+")]
+        private static partial Regex SubCategoryRegex();
     }
 
 	public class TransientTagItemForIO
 	{
 		public int LineNumber;
 		public string CategoryName;
+		public string SubCategoryName;
 		public string Name;
 		public string Description;
 		public List<string> Aliases;
@@ -406,7 +425,7 @@ namespace Filterizer2.Windows
 			}
 			string aliasRead = Aliases.Count > 0 ? $"           Aliases: {string.Join(", ", Aliases)}." : "";
 			string parentsRead = ParentNames.Count > 0 ? $"           Parents: {string.Join(", ", ParentNames)}." : "";
-			return Name + ", " + CategoryName + desc + aliasRead + parentsRead;
+			return Name + ", " + CategoryName + "("+ SubCategoryName + ")" + desc + aliasRead + parentsRead;
 		}
 	}
 

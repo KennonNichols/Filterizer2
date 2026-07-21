@@ -88,7 +88,8 @@ namespace Filterizer2
                         Id INTEGER PRIMARY KEY AUTOINCREMENT,
                         Name TEXT NOT NULL,
                         Category TEXT,
-                        Description TEXT
+                        Description TEXT,
+						SubCategory	TEXT
                     );",
                          @"
                     CREATE TABLE IF NOT EXISTS Album (

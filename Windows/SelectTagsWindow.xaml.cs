@@ -42,7 +42,7 @@ namespace Filterizer2.Windows
             else
             {
 	            //Otherwise, we can't parent a child to their own parent.
-	            tagValidator = tag => !tag.GetTagHierarchyIds().Contains(_childTag.Id);
+	            tagValidator = tag => !tag.GetAllParentIdsRecursive().Contains(_childTag.Id);
             }
             
             TagsListBox.ItemsSource = TagRepository.SearchTags(filterText).Where(tagValidator);

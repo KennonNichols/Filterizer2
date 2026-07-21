@@ -19,45 +19,171 @@
         <Name>Sexuality</Name>
         <Description>Gender identity of focus, or sexual identity of sex act (cis male, lesbian, et.c.).</Description>
         <Color>194, 131, 59</Color>
+        <SubCategories>
+            <li>
+                <Tag>Focused_Gender</Tag>
+                <Description>Tag every gender that is being focused on. A faceless, offscreen, or subtly drawn individual should not be tagged.</Description>
+            </li>
+            <li>
+                <Tag>Gender_Identity_and_Body</Tag>
+                <Description>Tag all gender identities and body types not implied by the previous.</Description>
+            </li>
+            <li>
+                <Tag>Sexuality</Tag>
+                <Description>Tag whether the action is homosexual, heterosexual, et.c..</Description>
+            </li>
+        </SubCategories>
+        <Order>6</Order>
     </li>
     <li>
         <Name>Feature</Name>
         <Description>Feature in image, like a choker, or a motorcycle.</Description>
         <Color>61, 78, 162</Color>
+        <SubCategories>
+            <li>
+                <Tag>Unusual_Anatomy</Tag>
+                <Description>Tag any anatomical anomalies.</Description>
+            </li>
+            <li>
+                <Tag>Bodies</Tag>
+                <Description>Tag any outstanding body types, including physique and body hair.</Description>
+            </li>
+            <li>
+                <Tag>Genitalia</Tag>
+                <Description>Tag any genitalia, including tentacles.</Description>
+            </li>
+            <li>
+                <Tag>Focuses_And_Views</Tag>
+                <Description>Tag any special cutaway views, positions, and focuses on specific body parts.</Description>
+            </li>
+            <li>
+                <Tag>Bodily_State</Tag>
+                <Description>Tag any unusual state or infliction on a body.</Description>
+            </li>
+            <li>
+                <Tag>Sex_Toys</Tag>
+                <Description>Tag any toys seen or used.</Description>
+            </li>
+            <li>
+                <Tag>Accessories</Tag>
+                <Description>Tag any accessories, clothing, fashion, or body modification like tattoos.</Description>
+            </li>
+            <li>
+                <Tag>Setting</Tag>
+                <Description>Tag anything special about the setting or location.</Description>
+            </li>
+        </SubCategories>
+        <Order>8</Order>
     </li>
     <li>
         <Name>Act</Name>
-        <Description>A sex act or position.</Description>
+        <Description>An action, sex act or position.</Description>
         <Color>0, 0, 0</Color>
+        <SubCategories>
+            <li>
+                <Tag>Sex_Positions</Tag>
+                <Description>Tag all sex positions. Note that teasing a position does not count; for example, if one person is laying down and another is sitting upright on their lap, it is not cowgirl because there is no penetration.</Description>
+            </li>
+            <li>
+                <Tag>Sex_Acts</Tag>
+                <Description>Tag any sexual acts or penetrations not implied by the position.</Description>
+            </li>
+            <li>
+                <Tag>Aspects_Of_Act</Tag>
+                <Description>Tag any special aspects of the sex happening, like emotions, rape, casual sex, incest, et.c..</Description>
+            </li>
+            <li>
+                <Tag>Accessory_Actions</Tag>
+                <Description>Tag any accessory actions, like kissing, threatening, or hurting.</Description>
+            </li>
+            <li>
+                <Tag>Dominance</Tag>
+                <Description>Tag any dominance.</Description>
+            </li>
+        </SubCategories>
+        <Order>7</Order>
     </li>
     <li>
         <Name>Meta</Name>
         <Description>Concepts that aren't actually in the media, like point of view.</Description>
         <Color>231, 212, 128</Color>
+        <SubCategories>
+            <li>
+                <Tag>Perspective</Tag>
+                <Description>Tag any camera angles and the point of view.</Description>
+            </li>
+            <li>
+                <Tag>Media Format</Tag>
+                <Description>Tag what type of layout or structure the content has.</Description>
+            </li>
+            <li>
+                <Tag>Audio</Tag>
+                <Description>Tag all audible features.</Description>
+            </li>
+        </SubCategories>
+        <Order>0</Order>
     </li>
     <li>
         <Name>Artstyle</Name>
         <Description>Style of art.</Description>
         <Color>120, 239, 213</Color>
+        <SubCategories>
+            <li>
+                <Tag>Specific_Styles</Tag>
+                <Description>Tag art styles, like anime for example.</Description>
+            </li>
+            <li>
+                <Tag>Composition</Tag>
+                <Description>Tag whether composition is 2d, 3d, pixels, painted, et.c..</Description>
+            </li>
+            <li>
+                <Tag>Style_Description</Tag>
+                <Description>Tag general aspects of the overall style.</Description>
+            </li>
+        </SubCategories>
+        <Order>1</Order>
     </li>
     <li>
         <Name>Species</Name>
         <Description>Species or species-specific features.</Description>
         <Color>1, 89, 26</Color>
+        <SubCategories>
+            <li>
+                <Tag>Species</Tag>
+                <Description>Tag any species if not implied by the characters you tagged.</Description>
+            </li>
+        </SubCategories>
+        <Order>4</Order>
     </li>
     <li>
         <Name>Character</Name>
         <Description>Character.</Description>
         <Color>94, 182, 9</Color>
+        <IsChildable>False</IsChildable>
+        <SubCategories>
+            <li>
+                <Tag>Characters</Tag>
+                <Description>Tag every relevant character and living creature.</Description>
+            </li>
+        </SubCategories>
+        <Order>3</Order>
     </li>
     <li>
         <Name>Ip</Name>
         <Description>Franchise, universe, or IP.</Description>
         <Color>162, 61, 113</Color>
+        <SubCategories>
+            <li>
+                <Tag>IP</Tag>
+                <Description>Tag any IPs not implied by the characters or species. For example, a stormtrooper in its armor would be tagged 'Star_Wars'.</Description>
+            </li>
+        </SubCategories>
+        <Order>5</Order>
     </li>
     <li>
         <Name>Artist</Name>
         <Description>Artist.</Description>
         <Color>183, 11, 64</Color>
+        <Order>2</Order>
     </li>
 </TagCategories>

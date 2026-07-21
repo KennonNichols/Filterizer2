@@ -12,7 +12,10 @@
             
             <StackPanel Grid.Row="0">
                 <TextBlock Text="Tag Name:" Margin="0,0,0,5"/>
-                <TextBox x:Name="TagNameTextBox" Width="350" Margin="0,0,0,10" BorderBrush="Gray" BorderThickness="2"/>
+                <TextBox
+                    PreviewTextInput="RestrictedTextBox_PreviewTextInput"
+                    PreviewKeyDown="RestrictedTextBox_PreviewKeyDown"
+                    DataObject.Pasting="RestrictedTextBox_Pasting"  x:Name="TagNameTextBox" Width="350" Margin="0,0,0,10" BorderBrush="Gray" BorderThickness="2"/>
 
                 <TextBlock Text="Tag Type:" Margin="0,0,0,5"/>
                 <StackPanel Orientation="Horizontal">
@@ -21,7 +24,10 @@
                 </StackPanel>
 
                 <TextBlock Text="Description:" Margin="10,10,0,5"/>
-                <TextBox x:Name="TagDescriptionTextBox" Width="350" Height="100" TextWrapping="Wrap" Margin="0,0,0,10" BorderBrush="Gray" BorderThickness="2"/>
+                <TextBox
+                    PreviewTextInput="RestrictedTextBox_PreviewTextInput"
+                    PreviewKeyDown="RestrictedTextBox_PreviewKeyDown"
+                    DataObject.Pasting="RestrictedTextBox_Pasting" x:Name="TagDescriptionTextBox" Width="350" Height="100" TextWrapping="Wrap" Margin="0,0,0,10" BorderBrush="Gray" BorderThickness="2"/>
 
                 <Button Content="Save Tag" Click="CreateTagButton_Click" Width="100" Height="30" HorizontalAlignment="Right"/>
             </StackPanel>

@@ -7,22 +7,28 @@ namespace Filterizer2
 {
     public class TagItem
     {
+	    public TagItem()
+	    {
+		    
+	    }
         public int Id { get; set; }
         public string Name { get; set; }
         public TagCategory Category { get; set; }
+        public TagSubCategory SubCategory { get; set; }
         public string Description { get; set; }
         public List<string> Aliases { get; set; } = new List<string>();
         /// <summary>
-        /// Temporary list of IDs. Before all tags are loaded, we 
+        /// Temporary list of IDs. Before all tags are loaded, we populate this field, then find parent tags later so all tags are loaded successfully
         /// </summary>
-        public List<int> ParentIDs { get; set; } = new List<int>();
+        public List<int> ImmediateParentIDs { get; set; } = new List<int>();
+        public bool IsChildable => Category?.IsChildable ?? true;
 
-        public IEnumerable<TagItem> ParentTags
+        public IEnumerable<TagItem> ImmediateParentTags
         {
 	        get
 	        {
 		        List<int>? vanishedInts = null;
-		        foreach (var parentId in ParentIDs)
+		        foreach (var parentId in ImmediateParentIDs)
 		        {
 			        if (TagRepository.TryGetTagById(parentId, out TagItem foundTag))
 			        {
@@ -40,14 +46,14 @@ namespace Filterizer2
 		        {
 			        foreach (int vanishedInt in vanishedInts)
 			        {
-				        ParentIDs.Remove(vanishedInt);
+				        ImmediateParentIDs.Remove(vanishedInt);
 			        }
 
 			        TagRepository.UpdateTag(this);
 		        }
 	        }
         }
-
+        
         public Brush DisplayColorBrush => Category.Brush;
         public HashSet<string> GetAllNamesAliasesAndParentNames()
         {
@@ -57,7 +63,7 @@ namespace Filterizer2
 	        {
 		        allNamesAliasesAndParentNames.Add(alias);
 	        }
-	        foreach (TagItem parentTag in ParentTags)
+	        foreach (TagItem parentTag in ImmediateParentTags)
 	        {
 		        foreach (string nameOrAlias in parentTag.GetAllNamesAliasesAndParentNames())
 		        {
@@ -70,24 +76,35 @@ namespace Filterizer2
         public void GetTagHierarchyTags(ref HashSet<TagItem> tagSet)
         {
 	        tagSet.Add(this);
-	        foreach (TagItem parentTag in ParentTags)
+	        foreach (TagItem parentTag in ImmediateParentTags)
 	        {
 		        parentTag.GetTagHierarchyTags(ref tagSet);
 	        }
         }
+        
+        
 
-        public HashSet<int> GetTagHierarchyIds()
+        // private HashSet<int>? _allParentIds;
+        //
+        // public IEnumerable<int> GetAllParentIdsRecursive()
+        // {
+	       //  return _allParentIds ??=
+		      //   ComputeAllParentIdsRecursive().ToHashSet();
+        // }
+        //TODO consider optimizing this in a way that it doesn't cache dead parental relationships
+        public IEnumerable<int> GetAllParentIdsRecursive()
         {
-	        HashSet<TagItem> tagItems = new ();
-	        GetTagHierarchyTags(ref tagItems);
-
-	        HashSet<int> tagIds = new ();
-	        foreach (TagItem parentTag in tagItems)
-	        {
-		        tagIds.Add(parentTag.Id);
-	        }
-
-	        return tagIds;
+	        // HashSet<TagItem> tagItems = new ();
+	        // GetTagHierarchyTags(ref tagItems);
+	        //
+	        // HashSet<int> tagIds = new ();
+	        // foreach (TagItem parentTag in tagItems)
+	        // {
+		       //  tagIds.Add(parentTag.Id);
+	        // }
+	        //
+	        // return tagIds;
+	        return TagRepository.GetAllParentIDsRecursively(Id);
         }
         
         public string NamesAndAliasesAsString =>
@@ -107,10 +124,15 @@ namespace Filterizer2
 	        {
 		        builder.Append(" \"" + Description + "\"");
 	        }
-
-	        if (ParentIDs.Count > 1)
+	        
+	        if (SubCategory.Title != "" && !SubCategory.IsFallback)
 	        {
-		        foreach (TagItem tagItem in ParentTags.Skip(1))
+		        builder.Append(" $" + SubCategory.TagString);
+	        }
+
+	        if (ImmediateParentIDs.Count > 1)
+	        {
+		        foreach (TagItem tagItem in ImmediateParentTags.Skip(1))
 		        {
 			        builder.Append(" >" + tagItem.Name);
 		        }

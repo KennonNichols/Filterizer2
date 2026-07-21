@@ -50,7 +50,7 @@ namespace Filterizer2.Windows
 				if (!wasExpanded)
 				{
 					tvi.IsExpanded = true;
-					tvi.UpdateLayout(); // Force sub-items to generate
+					tvi.UpdateLayout(); //Force sub-items to generate
 				}
 					
 				TreeViewItem? result = GetTreeViewItem(tvi, idToMatch);
@@ -82,12 +82,14 @@ namespace Filterizer2.Windows
 				masterPiece.Children.Add(categoryViewPiece);
 				currentUsedHierarchyLevel.Add(categoryViewPiece);
 			}
+			
+			
 
 			List<HierarchyViewPiece> lastUsedHierarchyLevel = currentUsedHierarchyLevel.ToList();
 			currentUsedHierarchyLevel.Clear();
 
-			//Add all tags with no parent
-			foreach (var tagItem in allTags.Where(unorderedTag => unorderedTag.ParentIDs.Count == 0))
+			//Add all tags with no parent, or children of a category that does not subscribe to parent/child hierarchy
+			foreach (var tagItem in allTags.Where(unorderedTag => unorderedTag.ImmediateParentIDs.Count == 0 || !unorderedTag.IsChildable))
 			{
 				HierarchyViewPiece parentPiece = lastUsedHierarchyLevel.Find(item =>
 					item is HierarchyViewCategory catItem && catItem.Category == tagItem.Category) ?? throw new InvalidOperationException("Tag has nonexistent category.");
@@ -109,7 +111,7 @@ namespace Filterizer2.Windows
 				{
 					if (possibleParentPiece is not HierarchyViewTag hierarchyTag) continue;
 					int parentTagId = hierarchyTag.Tag.Id;
-					foreach (var hierarchyChildTag in from possibleChildTag in allTags where possibleChildTag.ParentIDs.Contains(parentTagId) select new HierarchyViewTag(possibleChildTag, possibleChildTag.ParentIDs[0] == parentTagId))
+					foreach (var hierarchyChildTag in from possibleChildTag in allTags where (possibleChildTag.ImmediateParentIDs.Contains(parentTagId) && possibleChildTag.IsChildable) select new HierarchyViewTag(possibleChildTag, possibleChildTag.ImmediateParentIDs[0] == parentTagId))
 					{
 						currentUsedHierarchyLevel.Add(hierarchyChildTag);
 						possibleParentPiece.Children.Add(hierarchyChildTag);
@@ -132,8 +134,8 @@ namespace Filterizer2.Windows
 			TagDescriptionTextBlock.Text = viewPiece.GetDescription;
 			if (viewPiece is HierarchyViewTag tag)
 			{
-				TagParentsTextBlock.Text = tag.Tag.ParentIDs.Count > 0
-					? "Implies: " + string.Join(", ", tag.Tag.ParentTags) 
+				TagParentsTextBlock.Text = tag.Tag.ImmediateParentIDs.Count > 0
+					? "Implies: " + string.Join(", ", tag.Tag.ImmediateParentTags) 
 					: "Does not imply any other tags.";
 			}
 		}

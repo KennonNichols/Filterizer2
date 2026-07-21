@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
@@ -24,13 +25,15 @@ namespace Filterizer2.Windows
 
         public bool IsDeleteMode => _deleteMode;
         
-        private List<TagItem> currentTags = new List<TagItem>();
+        private ObservableCollection<TagItem> _currentTags = new ObservableCollection<TagItem>();
 
+        public ObservableCollection<TagItem> CurrentTags => _currentTags;
+        
         public EditMediaEntryWindow(MediaItem mediaItem)
         {
             _editingMediaItem = mediaItem;
             _mediaFilePath = mediaItem.MediaFilePath;
-        
+            
             SetUp();
         }
         
@@ -50,6 +53,8 @@ namespace Filterizer2.Windows
         private void SetUp()
         {
             InitializeComponent();
+
+            CurrentTagsItemsControl.ItemsSource = CurrentTags;
         
             // Set the VLC library path
             var currentDirectory = new FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).DirectoryName;
@@ -59,11 +64,10 @@ namespace Filterizer2.Windows
             LoadMediaPreview();
             TitleTextBox.Text = _editingMediaItem.Title;
             DescriptionTextBox.Text = _editingMediaItem.Description;
-            currentTags.AddRange(_editingMediaItem.GetTags());
             
-            foreach (TagItem currentTag in currentTags)
+            foreach (TagItem currentTag in _editingMediaItem.GetTags())
             {
-                CurrentTagsItemsControl.Items.Add(currentTag);
+	            _currentTags.Add(currentTag);
             }
              
             //Generate the thumbnail
@@ -84,7 +88,7 @@ namespace Filterizer2.Windows
         {
             _editingMediaItem.Title = TitleTextBox.Text;
             _editingMediaItem.Description = DescriptionTextBox.Text;
-            _editingMediaItem.SetTags(currentTags);
+            _editingMediaItem.SetTags(_currentTags.ToList());
             _editingMediaItem.LocalFilename = Path.GetFileName(_mediaFilePath);
             base.OnClosed(e);
             
@@ -164,10 +168,9 @@ namespace Filterizer2.Windows
         {
 	        if (TagSearchResultsListBox.SelectedItem is not TagItem selectedTag) return;
 	        
-	        if (currentTags.All(tag => tag.Id != selectedTag.Id))
+	        if (_currentTags.All(tag => tag.Id != selectedTag.Id))
 	        {
-		        currentTags.Add(selectedTag);
-		        CurrentTagsItemsControl.Items.Add(selectedTag);
+		        _currentTags.Add(selectedTag);
 	        }
 	        else
 	        {
@@ -189,21 +192,36 @@ namespace Filterizer2.Windows
 		        return;
 	        }
             if (sender is not MenuItem { CommandParameter: TagItem tagToRemove }) return;
-            currentTags.Remove(tagToRemove);
-            CurrentTagsItemsControl.Items.Remove(tagToRemove);
+            _currentTags.Remove(tagToRemove);
         }
 
         // Ensure currentTags are accessible when saving
-        public List<TagItem> GetSelectedTags()
-        {
-            return currentTags;
-        }
+        // public List<TagItem> GetSelectedTags()
+        // {
+        //     return _currentTags;
+        // }
         
         private void OpenTagDictionaryButton_Click(object sender, RoutedEventArgs e)
         {
 	        TagDictionaryWindow tagDictionaryWindow = new TagDictionaryWindow();
 	        tagDictionaryWindow.Show();
         }
+
+        private void OpenAdvancedTaggerButton_Click(object sender, RoutedEventArgs e)
+        {
+	        MediaTaggingHelperWindow mediaTaggerWindow = new MediaTaggingHelperWindow();
+	        mediaTaggerWindow.SetStartingTagList(ref _currentTags);
+	        mediaTaggerWindow.Show();
+        }
+
+        // public void SetTagList(IEnumerable<TagItem> tags)
+        // {
+	       //  currentTags.Clear();
+	       //  foreach (TagItem tagItem in tags)
+	       //  {
+		      //   currentTags.Add(tagItem)
+	       //  }
+        // }
 
         private void ToggleDelete_OnClick(object sender, RoutedEventArgs e)
         {

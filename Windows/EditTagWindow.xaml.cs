@@ -1,5 +1,7 @@
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Filterizer2.Windows
@@ -8,6 +10,12 @@ namespace Filterizer2.Windows
     {
 	    private List<string> Aliases { get; } = new List<string>();
         private List<int> ParentIds { get; } = new List<int>();
+
+        [GeneratedRegex("[@$\"\\s>]")]
+        private static partial Regex ForbiddenChars();
+        [GeneratedRegex("[@$\"\\t\\r\\n>]")]
+        private static partial Regex ForbiddenCharsDescription();
+        
 
         private readonly TagItem? _editingTag;
         
@@ -44,7 +52,7 @@ namespace Filterizer2.Windows
             }
             
             //Parents
-            foreach (var tagItemParent in tagItem.ParentTags)
+            foreach (var tagItemParent in tagItem.ImmediateParentTags)
             {
 	            ParentsListBox.Items.Add(tagItemParent);
 	            ParentIds.Add(tagItemParent.Id);
@@ -96,7 +104,7 @@ namespace Filterizer2.Windows
                 _editingTag.Description = tagDescription;
                 _editingTag.Category = selectedTagType;
                 _editingTag.Aliases = Aliases;
-                _editingTag.ParentIDs = ParentIds;
+                _editingTag.ImmediateParentIDs = ParentIds;
                 
                 TagRepository.UpdateTag(_editingTag);
             }
@@ -106,9 +114,10 @@ namespace Filterizer2.Windows
                 {
                     Name = tagName,
                     Category = selectedTagType,
+                    SubCategory = selectedTagType.DefaultSubCategory,
                     Description = tagDescription,
                     Aliases = Aliases,
-                    ParentIDs = ParentIds
+                    ImmediateParentIDs = ParentIds
                 };
 
                 TagRepository.AddTag(newTag);
@@ -122,6 +131,21 @@ namespace Filterizer2.Windows
         {
             var alias = Microsoft.VisualBasic.Interaction.InputBox("Enter a new alias:", "Add Alias");
             if (string.IsNullOrWhiteSpace(alias) || Aliases.Contains(alias)) return;
+            Regex regex = GetRegexForTextSource(sender);
+            
+            if (regex.IsMatch(" "))
+            {
+	            alias = alias.Replace(" ", "_");
+            }
+            
+            if (regex.IsMatch(alias))
+            {
+	            char matched = regex.Match(alias).Value[0];
+	            MessageBox.Show($"Alias contains forbidden character: {matched}", "Invalid Alias",
+		            MessageBoxButton.OK, MessageBoxImage.Error);
+	            alias = regex.Replace(alias, string.Empty);
+            }
+            
             Aliases.Add(alias);
             AliasesListBox.Items.Add(alias);
         }
@@ -149,13 +173,76 @@ namespace Filterizer2.Windows
 	        }
         }
 
-        public List<TagItem> GetParents => _editingTag?.ParentTags.ToList() ??
+        public List<TagItem> GetParents => _editingTag?.ImmediateParentTags.ToList() ??
                                            ParentsListBox.Items.SourceCollection.Cast<TagItem>().ToList();
 
         private void EditParent_Click(object sender, RoutedEventArgs e)
         {
 	        SelectTagsWindow selectTagsWindow = new SelectTagsWindow(this, _editingTag);
 	        selectTagsWindow.Show();
+        }
+
+        private void RestrictedTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+	        e.Handled = GetRegexForTextSource(sender).IsMatch(e.Text);
+        }
+
+        private void RestrictedTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+	        var textBox = sender as TextBox;
+	        if (textBox == null) return;
+
+	        if (e.Key == Key.Space)
+	        {
+		        var regex = GetRegexForTextSource(sender);
+		        if (regex.IsMatch(" "))
+		        {
+			        e.Handled = true;
+			        int caretIndex = textBox.CaretIndex;
+			        textBox.Text = textBox.Text.Remove(textBox.SelectionStart, textBox.SelectionLength)
+				        .Insert(caretIndex, "_");
+			        textBox.CaretIndex = caretIndex + 1;
+		        }
+	        }
+        }
+
+        private void RestrictedTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+	        if (sender is not TextBox textBox) return;
+
+	        if (e.DataObject.GetDataPresent(typeof(string)))
+	        {
+		        Regex regex = GetRegexForTextSource(sender);
+		        
+		        string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+		        //Space is special cased to be replaced with underscores.
+		        if (regex.IsMatch(" "))
+		        {
+			        pastedText = pastedText.Replace(" ", "_");
+		        }
+		        
+
+		        string cleanedText = regex.Replace(pastedText, string.Empty);
+
+		        int selectionStart = textBox.SelectionStart;
+		        int selectionLength = textBox.SelectionLength;
+
+		        string currentText = textBox.Text;
+		        string newText = currentText.Remove(selectionStart, selectionLength)
+			        .Insert(selectionStart, cleanedText);
+
+		        textBox.Text = newText;
+
+		        textBox.SelectionStart = selectionStart + cleanedText.Length;
+	        }
+	        
+	        e.CancelCommand();
+        }
+
+        private Regex GetRegexForTextSource(object source)
+        {
+	        return source is TextBox { Name: "TagDescriptionTextBox" } ? ForbiddenCharsDescription() : ForbiddenChars();
         }
     }
 
