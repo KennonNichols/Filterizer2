@@ -38,7 +38,10 @@ namespace Filterizer2.Windows
         {
             //Category
             TagTypeComboBox.SelectedItem = tagItem.Category;
-            UpdateUiForSelectedTagType(tagItem.Category);
+            // UpdateUiForSelectedTagType(tagItem.Category);
+            
+            //Subcategory
+            TagSubtypeComboBox.SelectedItem = tagItem.SubCategory;
 
             //Name and description
             TagNameTextBox.Text = tagItem.Name;
@@ -68,6 +71,15 @@ namespace Filterizer2.Windows
                 UpdateUiForSelectedTagType(selectedTagType);
             }
         }
+        
+        private void TagSubtypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+	        // Update the UI when a new TagType is selected
+	        if (TagSubtypeComboBox.SelectedItem is TagSubCategory selectedTagSubtype)
+	        {
+		        TagSubDescriptionTextBlock.Text = selectedTagSubtype.Description;
+	        }
+        }
 
         private void UpdateUiForSelectedTagType(TagCategory tagType)
         {
@@ -84,12 +96,18 @@ namespace Filterizer2.Windows
             // Update the description text block
             TagDescriptionTextBlock.Text = description;
             TagDescriptionTextBlock.Foreground = new SolidColorBrush(color);
+
+            TagSubDescriptionTextBlock.Foreground = new SolidColorBrush(color);
+            
+            TagSubtypeComboBox.ItemsSource = tagType.SubcategoriesInOrder;
+            TagSubtypeComboBox.SelectedIndex = tagType.SubcategoriesInOrder.Count - 1; // Select misc by default
         }
 
         private void CreateTagButton_Click(object sender, RoutedEventArgs e)
         {
             string tagName = TagNameTextBox.Text.Trim();
             TagCategory selectedTagType = (TagCategory)TagTypeComboBox.SelectedItem;
+            TagSubCategory selectedTagSubtype = (TagSubCategory)TagSubtypeComboBox.SelectedItem;
             string tagDescription = TagDescriptionTextBox.Text.Trim();
 
             if (string.IsNullOrEmpty(tagName))
@@ -103,6 +121,7 @@ namespace Filterizer2.Windows
                 _editingTag.Name = tagName;
                 _editingTag.Description = tagDescription;
                 _editingTag.Category = selectedTagType;
+                _editingTag.SubCategory = selectedTagSubtype;
                 _editingTag.Aliases = Aliases;
                 _editingTag.ImmediateParentIDs = ParentIds;
                 
@@ -114,7 +133,7 @@ namespace Filterizer2.Windows
                 {
                     Name = tagName,
                     Category = selectedTagType,
-                    SubCategory = selectedTagType.DefaultSubCategory,
+                    SubCategory = selectedTagSubtype,
                     Description = tagDescription,
                     Aliases = Aliases,
                     ImmediateParentIDs = ParentIds

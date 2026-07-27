@@ -25,7 +25,7 @@
                 <Description>Tag every gender that is being focused on. A faceless, offscreen, or subtly drawn individual should not be tagged.</Description>
             </li>
             <li>
-                <Tag>Gender_Identity_and_Body</Tag>
+                <Tag>Gender_Identity_And_Body</Tag>
                 <Description>Tag all gender identities and body types not implied by the previous.</Description>
             </li>
             <li>
@@ -45,6 +45,10 @@
                 <Description>Tag any anatomical anomalies.</Description>
             </li>
             <li>
+                <Tag>Animal_parts</Tag>
+                <Description>Tag any notable animal body parts.</Description>
+            </li>
+            <li>
                 <Tag>Bodies</Tag>
                 <Description>Tag any outstanding body types, including physique and body hair.</Description>
             </li>
@@ -57,16 +61,32 @@
                 <Description>Tag any special cutaway views, positions, and focuses on specific body parts.</Description>
             </li>
             <li>
+                <Tag>Character_Distributions</Tag>
+                <Description>Tag counts or distributions of characters.</Description>
+            </li>
+            <li>
+                <Tag>Emotions</Tag>
+                <Description>Tag the emotions of each partner.</Description>
+            </li>
+            <li>
                 <Tag>Bodily_State</Tag>
-                <Description>Tag any unusual state or infliction on a body.</Description>
+                <Description>Tag any unusual state, marking, or infliction on a body.</Description>
             </li>
             <li>
                 <Tag>Sex_Toys</Tag>
                 <Description>Tag any toys seen or used.</Description>
             </li>
             <li>
+                <Tag>BDSM_Equipment</Tag>
+                <Description>Tag any bondage equipment seen or used.</Description>
+            </li>
+            <li>
+                <Tag>Clothing</Tag>
+                <Description>Tag any clothing or fashion.</Description>
+            </li>
+            <li>
                 <Tag>Accessories</Tag>
-                <Description>Tag any accessories, clothing, fashion, or body modification like tattoos.</Description>
+                <Description>Tag any accessories or body modification like tattoos.</Description>
             </li>
             <li>
                 <Tag>Setting</Tag>
@@ -82,23 +102,39 @@
         <SubCategories>
             <li>
                 <Tag>Sex_Positions</Tag>
-                <Description>Tag all sex positions. Note that teasing a position does not count; for example, if one person is laying down and another is sitting upright on their lap, it is not cowgirl because there is no penetration.</Description>
+                <Description>Tag all sex positions. An unusual position one partner is in (such as face-down or upside-down) is NOT a sex position; a sex position is how two people are positioned relevant to each other. Note that teasing a position does not count if there is no stimulation.</Description>
             </li>
             <li>
                 <Tag>Sex_Acts</Tag>
-                <Description>Tag any sexual acts or penetrations not implied by the position.</Description>
+                <Description>Tag any sexual acts, masturbation, or penetration not implied by the position.</Description>
+            </li>
+            <li>
+                <Tag>Bondage</Tag>
+                <Description>Tag any bondage, holds, pins, or restraints.</Description>
+            </li>
+            <li>
+                <Tag>Transformations</Tag>
+                <Description>Describe any transformations or changes to body or mind.</Description>
+            </li>
+            <li>
+                <Tag>Acts_Of_Dominance</Tag>
+                <Description>Tag any non-bondage acts or forms of dominance or submission.</Description>
+            </li>
+            <li>
+                <Tag>Orgasms</Tag>
+                <Description>Tag any orgasms, including where ejaculations are.</Description>
+            </li>
+            <li>
+                <Tag>Non_Orgasm_Releases</Tag>
+                <Description>Tag any non-orgasm releases like egg laying, urinating, or lactation.</Description>
             </li>
             <li>
                 <Tag>Aspects_Of_Act</Tag>
-                <Description>Tag any special aspects of the sex happening, like emotions, rape, casual sex, incest, et.c..</Description>
+                <Description>Tag any special aspects of the sex happening, like number of partners, emotions, consent, incest, et.c..</Description>
             </li>
             <li>
                 <Tag>Accessory_Actions</Tag>
-                <Description>Tag any accessory actions, like kissing, threatening, or hurting.</Description>
-            </li>
-            <li>
-                <Tag>Dominance</Tag>
-                <Description>Tag any dominance.</Description>
+                <Description>Tag any accessory actions, like kissing, cuddling, dancing.</Description>
             </li>
         </SubCategories>
         <Order>7</Order>
@@ -113,7 +149,7 @@
                 <Description>Tag any camera angles and the point of view.</Description>
             </li>
             <li>
-                <Tag>Media Format</Tag>
+                <Tag>Media_Format</Tag>
                 <Description>Tag what type of layout or structure the content has.</Description>
             </li>
             <li>
@@ -149,8 +185,16 @@
         <Color>1, 89, 26</Color>
         <SubCategories>
             <li>
-                <Tag>Species</Tag>
+                <Tag>Specific_Species</Tag>
                 <Description>Tag any species if not implied by the characters you tagged.</Description>
+            </li>
+            <li>
+                <Tag>Body_Type</Tag>
+                <Description>Tag any special body types of a species.</Description>
+            </li>
+            <li>
+                <Tag>Aspects</Tag>
+                <Description>Tag any special aspects of a species, like sentience, category (alien, diety), or behavior.</Description>
             </li>
         </SubCategories>
         <Order>4</Order>
@@ -160,24 +204,24 @@
         <Description>Character.</Description>
         <Color>94, 182, 9</Color>
         <IsChildable>False</IsChildable>
-        <SubCategories>
-            <li>
-                <Tag>Characters</Tag>
-                <Description>Tag every relevant character and living creature.</Description>
-            </li>
-        </SubCategories>
+        <!-- <SubCategories> -->
+        <!--     <li> -->
+        <!--         <Tag>Characters</Tag> -->
+        <!--         <Description>Tag every relevant character and living creature.</Description> -->
+        <!--     </li> -->
+        <!-- </SubCategories> -->
         <Order>3</Order>
     </li>
     <li>
         <Name>Ip</Name>
         <Description>Franchise, universe, or IP.</Description>
         <Color>162, 61, 113</Color>
-        <SubCategories>
-            <li>
-                <Tag>IP</Tag>
-                <Description>Tag any IPs not implied by the characters or species. For example, a stormtrooper in its armor would be tagged 'Star_Wars'.</Description>
-            </li>
-        </SubCategories>
+        <!-- <SubCategories> -->
+        <!--     <li> -->
+        <!--         <Tag>IP</Tag> -->
+        <!--         <Description>Tag any IPs not implied by the characters or species. For example, a stormtrooper in its armor would be tagged 'Star_Wars'.</Description> -->
+        <!--     </li> -->
+        <!-- </SubCategories> -->
         <Order>5</Order>
     </li>
     <li>

@@ -22,6 +22,12 @@
                     <ComboBox x:Name="TagTypeComboBox" Width="150" Height="25" SelectionChanged="TagTypeComboBox_SelectionChanged" Margin="0,0,10,0"/>
                     <TextBlock x:Name="TagDescriptionTextBlock" Width="180" TextWrapping="Wrap" VerticalAlignment="Center"/>
                 </StackPanel>
+                
+                <TextBlock Text="Tag subtype:" Margin="30,0,0,5"/>
+                <StackPanel Orientation="Horizontal" Margin="30,0,0,0">
+                    <ComboBox x:Name="TagSubtypeComboBox" Width="150" Height="25" SelectionChanged="TagSubtypeComboBox_SelectionChanged" Margin="0,0,10,0"/>
+                    <TextBlock x:Name="TagSubDescriptionTextBlock" Width="180" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                </StackPanel>
 
                 <TextBlock Text="Description:" Margin="10,10,0,5"/>
                 <TextBox

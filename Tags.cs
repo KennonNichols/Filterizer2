@@ -200,6 +200,8 @@ namespace Filterizer2
 		public TagCategory Parent;
 		public bool IsFallback;
 
+		public override string ToString() => Title;
+
 		//We don't store fallback names
 		public string TagStringForDatabase => IsFallback ? "" : TagString;
 
