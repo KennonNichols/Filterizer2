@@ -268,6 +268,8 @@ namespace Filterizer2.Controls
 
 			_translate.X += current.X - _lastPoint.X;
 			_translate.Y += current.Y - _lastPoint.Y;
+			
+			ClampTranslation();
 
 			_lastPoint = current;
 		}
@@ -303,8 +305,46 @@ namespace Filterizer2.Controls
 
 			_translate.X = mouse.X - imageX * newScale;
 			_translate.Y = mouse.Y - imageY * newScale;
-
+			
+			ClampTranslation();
+			
 			e.Handled = true;
+		}
+		
+		private void ClampTranslation()
+		{
+			double viewportWidth = MediaContainer.ActualWidth;
+			double viewportHeight = MediaContainer.ActualHeight;
+
+			double mediaWidth = MediaBorder.ActualWidth * _scale.ScaleX;
+			double mediaHeight = MediaBorder.ActualHeight * _scale.ScaleY;
+
+			// Horizontal
+			if (mediaWidth <= viewportWidth)
+			{
+				// Image smaller than viewport -> center it.
+				_translate.X = (viewportWidth - mediaWidth) / 2;
+			}
+			else
+			{
+				double minX = viewportWidth - mediaWidth;
+				double maxX = 0;
+
+				_translate.X = Math.Clamp(_translate.X, minX, maxX);
+			}
+
+			// Vertical
+			if (mediaHeight <= viewportHeight)
+			{
+				_translate.Y = (viewportHeight - mediaHeight) / 2;
+			}
+			else
+			{
+				double minY = viewportHeight - mediaHeight;
+				double maxY = 0;
+
+				_translate.Y = Math.Clamp(_translate.Y, minY, maxY);
+			}
 		}
 
 		//TODO reset?
