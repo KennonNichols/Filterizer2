@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Vlc.DotNet.Core;
@@ -13,10 +14,19 @@ namespace Filterizer2.Controls
 {
 	public partial class MediaMultiplayerControl : UserControl
 	{
+		private readonly ScaleTransform _scale = new(1, 1);
+		private readonly TranslateTransform _translate = new();
+		
 		public MediaMultiplayerControl()
 		{
 			InitializeComponent();
 			
+			var group = new TransformGroup();
+			group.Children.Add(_scale);
+			group.Children.Add(_translate);
+
+			ImageView.RenderTransform = group;
+			ImageView.RenderTransformOrigin = new Point(0, 0);
 			
 			// Set the VLC library path
 			var currentDirectory = new FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).DirectoryName;
@@ -236,5 +246,75 @@ namespace Filterizer2.Controls
 			CurrentPlayer.SetMedia(CurrentPlayer.GetMedia().Mrl);
 			PlayPlayer();
 		}
+		
+		
+		
+		private Point _lastPoint;
+		private bool _dragging;
+
+		private void Media_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			_dragging = true;
+			_lastPoint = e.GetPosition(this);
+			ImageView.CaptureMouse();
+		}
+
+		private void Media_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_dragging)
+				return;
+
+			Point current = e.GetPosition(this);
+
+			_translate.X += current.X - _lastPoint.X;
+			_translate.Y += current.Y - _lastPoint.Y;
+
+			_lastPoint = current;
+		}
+
+		private void Media_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			_dragging = false;
+			ImageView.ReleaseMouseCapture();
+		}
+		
+		private void Media_MouseWheel(object sender, MouseWheelEventArgs e)
+		{
+			const double zoomFactor = 1.2;
+			const double minZoom = 1;
+			const double maxZoom = 20.0;
+
+			Point mouse = e.GetPosition(MediaContainer);
+
+			double oldScale = _scale.ScaleX;
+
+			double newScale = e.Delta > 0
+				? oldScale * zoomFactor
+				: oldScale / zoomFactor;
+
+			newScale = Math.Clamp(newScale, minZoom, maxZoom);
+
+			//Position of the mouse in image coordinates BEFORE zooming.
+			double imageX = (mouse.X - _translate.X) / oldScale;
+			double imageY = (mouse.Y - _translate.Y) / oldScale;
+
+			_scale.ScaleX = newScale;
+			_scale.ScaleY = newScale;
+
+			_translate.X = mouse.X - imageX * newScale;
+			_translate.Y = mouse.Y - imageY * newScale;
+
+			e.Handled = true;
+		}
+
+		//TODO reset?
+		// private void Media_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+		// {
+		// 	_scale.ScaleX = 1;
+		// 	_scale.ScaleY = 1;
+		//
+		// 	_translate.X = 0;
+		// 	_translate.Y = 0;
+		// }
 	}
 }

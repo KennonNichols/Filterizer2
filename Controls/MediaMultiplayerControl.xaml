@@ -7,7 +7,12 @@
              xmlns:wpf="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
-    <Grid>
+    <Grid x:Name="MediaContainer"
+          ClipToBounds="True"
+          MouseWheel="Media_MouseWheel"
+          MouseMove="Media_MouseMove"
+          MouseLeftButtonDown="Media_MouseLeftButtonDown"
+          MouseLeftButtonUp="Media_MouseLeftButtonUp">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />

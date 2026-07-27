@@ -63,6 +63,7 @@
                     Width="170"
                     Height="60"
                     FontWeight="Bold"
+                    IsDefault="True"
                     Click="ConfirmSubcategoryButton_Click"/>
         </Grid>
 
