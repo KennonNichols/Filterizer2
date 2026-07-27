@@ -139,8 +139,11 @@ namespace Filterizer2.Controls
 		private bool _wasPlayingBeforeSeek;
 		public void PausePlayer()
 		{
-			CurrentPlayer?.Pause();
-			TogglePlayButton.Content = "Play";
+			if (CurrentPlayer?.IsPlaying() == true)
+			{
+				CurrentPlayer.Pause();
+				TogglePlayButton.Content = "Play";
+			}
 		}
 		private VlcMediaPlayer? CurrentPlayer => VlcPlayer?.SourceProvider?.MediaPlayer;
 		private void TogglePlayButton_Click(object sender, RoutedEventArgs e)

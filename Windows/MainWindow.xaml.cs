@@ -456,8 +456,11 @@ namespace Filterizer2.Windows
 
         private void PausePlayer()
         {
-	        CurrentPlayer?.Pause();
-	        if(!isFullPaneMode) TogglePlayButton.Content = "Play";
+	        if (CurrentPlayer?.IsPlaying() == true)
+	        {
+		        CurrentPlayer.Pause();
+		        if(!isFullPaneMode) TogglePlayButton.Content = "Play";
+	        }
         }
         private async Task PlayPlayer(Uri? mediaFileUri = null)
         {
