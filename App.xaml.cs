@@ -20,18 +20,23 @@ public partial class App : Application
 	private void App_DispatcherUnhandledException(object sender,
 		DispatcherUnhandledExceptionEventArgs e)
 	{
-		MessageBox.Show(e.Exception.ToString(), "Unhandled Exception");
+		ShowExceptionWindow(e.Exception, "Unhandled Exception");
 	}
 	
 	private void TaskScheduler_UnobservedTaskException(object? sender,
 		UnobservedTaskExceptionEventArgs e)
 	{
-		MessageBox.Show(e.Exception.ToString(), "Unobserved Task Exception");
+		ShowExceptionWindow(e.Exception, "Unobserved Task Exception");
 	}
 	
 	private void CurrentDomain_UnhandledException(object sender,
 		UnhandledExceptionEventArgs e)
 	{
-		MessageBox.Show(e.ExceptionObject.ToString(), "Unhandled Exception In Domain");
+		ShowExceptionWindow(e.ExceptionObject as Exception ?? new Exception("Null exception"), "Unhandled Exception In Domain");
+	}
+
+	public static void ShowExceptionWindow(Exception e, string name)
+	{
+		MessageBox.Show(e.ToString(), name);
 	}
 }

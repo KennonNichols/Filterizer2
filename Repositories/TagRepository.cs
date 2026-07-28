@@ -55,7 +55,7 @@ namespace Filterizer2
 	        command.Parameters.AddWithValue("@name", name);
 	        
 	        using var reader = command.ExecuteReader();
-	        return reader.Read() ? ReadRowAsTag(reader, connection) : null;
+	        return reader.Read() ? ReadRowAsTag(reader, connection, name) : null;
         }
         public static bool TryGetTagById(int tagId, out TagItem tagItem)
         {
@@ -72,7 +72,7 @@ namespace Filterizer2
 	        using var reader = command.ExecuteReader();
 	        if (reader.Read())
 	        {
-		        tagItem = ReadRowAsTag(reader, connection);
+		        tagItem = ReadRowAsTag(reader, connection, tagId.ToString());
 		        _tagCache.Add(tagId, tagItem);
 		        return true;
 	        }
@@ -90,7 +90,7 @@ namespace Filterizer2
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                yield return ReadRowAsTag(reader, connection);
+                yield return ReadRowAsTag(reader, connection, "Iterating all tags");
             }
         }
 
@@ -352,7 +352,7 @@ namespace Filterizer2
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                yield return ReadRowAsTag(reader, connection);
+                yield return ReadRowAsTag(reader, connection, searchString);
             }
         }
         #endregion
@@ -399,45 +399,53 @@ namespace Filterizer2
 	        return tag;
         }
 
-        private static TagItem ReadRowAsTag(SQLiteDataReader reader, SQLiteConnection connection)
+        private static TagItem ReadRowAsTag(SQLiteDataReader reader, SQLiteConnection connection, string accessDescription)
         {
-	        TagCategory category = Tags.GetCategoryOfName(reader.GetString(2), true);
-	        var tag = new TagItem
+	        try
 	        {
-		        Id = reader.GetInt32(0),
-		        Name = reader.GetString(1),
-		        Category = category,
-		        Description = reader.GetString(3),
-		        SubCategory = category.GetSubCategoryByName(reader.GetString(4))
-	        };
-
-	        // Retrieve aliases
-	        var aliasCommand = connection.CreateCommand();
-	        aliasCommand.CommandText = "SELECT Alias FROM TagAliases WHERE TagId = @tagId";
-	        aliasCommand.Parameters.AddWithValue("@tagId", tag.Id);
-
-	        using (var aliasReader = aliasCommand.ExecuteReader())
-	        {
-		        while (aliasReader.Read())
+		        TagCategory category = Tags.GetCategoryOfName(reader.GetString(2), true);
+		        var tag = new TagItem
 		        {
-			        tag.Aliases.Add(aliasReader.GetString(0));
-		        }
-	        }
+			        Id = reader.GetInt32(0),
+			        Name = reader.GetString(1),
+			        Category = category,
+			        Description = reader.GetString(3),
+			        SubCategory = category.GetSubCategoryByName(reader.GetString(4))
+		        };
 
-	        // Retrieve parent IDs
-	        var parentCommand = connection.CreateCommand();
-	        parentCommand.CommandText = "SELECT ParentTagId FROM Implications WHERE TagId = @tagId";
-	        parentCommand.Parameters.AddWithValue("@tagId", tag.Id);
+		        // Retrieve aliases
+		        var aliasCommand = connection.CreateCommand();
+		        aliasCommand.CommandText = "SELECT Alias FROM TagAliases WHERE TagId = @tagId";
+		        aliasCommand.Parameters.AddWithValue("@tagId", tag.Id);
 
-	        using (var parentReader = parentCommand.ExecuteReader())
-	        {
-		        while (parentReader.Read())
+		        using (var aliasReader = aliasCommand.ExecuteReader())
 		        {
-			        tag.ImmediateParentIDs.Add(parentReader.GetInt32(0));
+			        while (aliasReader.Read())
+			        {
+				        tag.Aliases.Add(aliasReader.GetString(0));
+			        }
 		        }
-	        }
 
-	        return tag;
+		        // Retrieve parent IDs
+		        var parentCommand = connection.CreateCommand();
+		        parentCommand.CommandText = "SELECT ParentTagId FROM Implications WHERE TagId = @tagId";
+		        parentCommand.Parameters.AddWithValue("@tagId", tag.Id);
+
+		        using (var parentReader = parentCommand.ExecuteReader())
+		        {
+			        while (parentReader.Read())
+			        {
+				        tag.ImmediateParentIDs.Add(parentReader.GetInt32(0));
+			        }
+		        }
+
+		        return tag;
+	        }
+	        catch (Exception e)
+	        {
+		        App.ShowExceptionWindow(e, "Error loading tag: " + accessDescription);
+		        throw;
+	        }
         }
 
         public static void UpdateTag(TagItem editingTag)

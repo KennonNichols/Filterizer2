@@ -311,7 +311,6 @@ namespace Filterizer2.Windows
 		        foreach (MediaItem allMediaItem in MediaRepository.GetAllMediaItems())
 		        {
 			        displayItems.Add(allMediaItem);
-			        loadedMediaIDs.Add(allMediaItem.Id);
 		        }
 	        }
 	        
