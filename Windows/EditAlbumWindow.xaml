@@ -29,6 +29,8 @@
         <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="2" Grid.Column="0">
             <!-- Add All Tags Button -->
             <Button Content="Mass Add Tags" HorizontalAlignment="Right" Click="AddAllTags_Click" ToolTip="Prompt a tag selection, and add selected tags to all pieces of media in the album. Make sure that all pieces of media in the album contain this."/>
+            <!-- Add All Tags Button -->
+            <Button Content="Mass (Add Advanced)" Margin="10,0, 0,0" Click="AddAllTagsAdvanced_Click" ToolTip="Prompt a tag selection, and add selected tags to all pieces of media in the album. Make sure that all pieces of media in the album contain this."/>
             <!-- Flip order Button -->
             <Button Content="Invert Order" Margin="10,0, 0,0" HorizontalAlignment="Right" Click="InvertItems_Click" ToolTip="Reverse order of items in album."/>
             
@@ -55,9 +57,10 @@
                         <StackPanel Orientation="Horizontal">
                             <Image Source="{Binding ThumbnailPath}" Width="64" Height="64" Margin="5" />
                             <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="5" Width="150" />
-                            <Button Content="Remove" Tag="{Binding Path=.}" Margin="5" Click="RemoveMediaItem_Click"/>
-                            <Button Content="Up" Tag="{Binding Path=.}" Margin="5" Click="MoveUp_Click"/>
-                            <Button Content="Down" Tag="{Binding Path=.}" Margin="5" Click="MoveDown_Click"/>
+                            <Button Content="Remove" Tag="{Binding Path=.}" Height="20" Margin="5" Click="RemoveMediaItem_Click"/>
+                            <Button Content="Edit" Tag="{Binding Path=.}" Height="20" Margin="5" Click="EditMediaItem_Click"/>
+                            <Button Content="Up" Tag="{Binding Path=.}" Height="20" Margin="5" Click="MoveUp_Click"/>
+                            <Button Content="Down" Tag="{Binding Path=.}" Height="20" Margin="5" Click="MoveDown_Click"/>
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>

@@ -92,6 +92,16 @@ namespace Filterizer2.Windows
             _albumItem.MediaItems.Remove(mediaItem);
             AlbumContentsListBox.Items.Remove(mediaItem);
         }
+        
+        private void EditMediaItem_Click(object sender, RoutedEventArgs e)
+        {
+	        MediaItem mediaItem = (MediaItem)((Button)sender).Tag;
+	        EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(mediaItem);
+	        if (entryWindow.ShowDialog() ?? false)
+	        {
+		        ReloadAllMediaItems();
+	        }
+        }
 
         private void MoveUp_Click(object sender, RoutedEventArgs e)
         {
@@ -141,6 +151,17 @@ namespace Filterizer2.Windows
 	        tagSelectWindow.ShowDialog();
         }
 
+        private void AddAllTagsAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+	        string? filePath = null;
+	        if (_albumItem.MediaItems.Count > 0)
+	        {
+		        filePath = _albumItem?.MediaItems[0]?.MediaFilePath;
+	        }
+	        MediaTaggingHelperWindow tagSelectWindow = new MediaTaggingHelperWindow(filePath, OnTagSelectComplete);
+	        tagSelectWindow.ShowDialog();
+        }
+        
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
@@ -193,7 +214,6 @@ namespace Filterizer2.Windows
 	        }
 	        foreach (MediaItem albumItemMediaItem in _albumItem.MediaItems)
 	        {
-		        // List<
 		        bool anyChanged = false;
 		        
 		        foreach (TagItem tag in selectedTags)

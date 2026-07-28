@@ -30,8 +30,10 @@ namespace Filterizer2.Windows
 		public ObservableCollection<TagDisplayChildingItem> ChildOfQueue => _childOfQueue;
 		
 		private Dictionary<string, HashSet<int>> _tagChildrenCache = new Dictionary<string, HashSet<int>>();
+
+		private Action<List<TagItem>>? _onTagSelectComplete;
 		
-		public MediaTaggingHelperWindow(string? mediaFilePath)
+		public MediaTaggingHelperWindow(string? mediaFilePath, Action<List<TagItem>>? onTagSelectComplete = null)
 		{
 			InitializeComponent();
 			DataContext = this;
@@ -40,6 +42,7 @@ namespace Filterizer2.Windows
 			UpdateContentForCurrentCategories();
 			_masterTags.CollectionChanged += Tags_CollectionChanged;
 			_queueTags.CollectionChanged += Tags_CollectionChanged;
+			_onTagSelectComplete = onTagSelectComplete;
 
 			if (mediaFilePath != null)
 			{
@@ -89,14 +92,21 @@ namespace Filterizer2.Windows
 						    MessageBoxImage.Question
 					    ) == MessageBoxResult.Yes)
 					{
-						if (originalWindowTags == null)
+						if (originalWindowTags != null)
 						{
-							throw new Exception("Opened media tagging helper without list of tags to write to.");
+							originalWindowTags.Clear();
+							foreach (TagItem masterTag in _masterTags)
+							{
+								originalWindowTags.Add(masterTag);
+							}
 						}
-						originalWindowTags.Clear();
-						foreach (TagItem masterTag in _masterTags)
+						else if (_onTagSelectComplete != null)
 						{
-							originalWindowTags.Add(masterTag);
+							_onTagSelectComplete.Invoke(_masterTags.ToList());
+						}
+						else
+						{
+							throw new Exception("Opened media tagging helper without list of tags to write to or action to execute.");
 						}
 						Close();
 						return;
@@ -194,6 +204,12 @@ namespace Filterizer2.Windows
 				.._masterTags.Select(t => t.Id),
 				.._queueTags.Select(t => t.Tag.Id)
 			];
+		}
+		
+		protected override void OnClosed(EventArgs e)
+		{
+			base.OnClosed(e);
+			MediaPlayer.Dispose();
 		}
 
 		private void RefreshSearchResults()

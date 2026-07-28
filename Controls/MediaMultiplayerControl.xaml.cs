@@ -161,6 +161,11 @@ namespace Filterizer2.Controls
 			TogglePlay();
 		}
 
+		public void Dispose()
+		{
+			VlcPlayer.Dispose();
+		}
+
 		private void TogglePlay()
 		{
 			if (CurrentPlayer == null) return;

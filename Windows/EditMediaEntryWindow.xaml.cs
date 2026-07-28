@@ -107,17 +107,19 @@ namespace Filterizer2.Windows
 
         protected override void OnClosed(EventArgs e)
         {
-            _editingMediaItem.Title = TitleTextBox.Text;
-            _editingMediaItem.Description = DescriptionTextBox.Text;
-            _editingMediaItem.SetTags(_currentTags.ToList());
-            _editingMediaItem.LocalFilename = Path.GetFileName(_mediaFilePath);
-            base.OnClosed(e);
-            
-            
+	        base.OnClosed(e);
+	        DialogResult ??= false;
+	        MediaPlayer.Dispose();
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
+	        _editingMediaItem.Title = TitleTextBox.Text;
+	        _editingMediaItem.Description = DescriptionTextBox.Text;
+	        _editingMediaItem.SetTags(_currentTags.ToList());
+	        _editingMediaItem.LocalFilename = Path.GetFileName(_mediaFilePath);
+	        
+	        MediaRepository.UpdateMedia(_editingMediaItem);
             DialogResult = true;
             Close();
         }

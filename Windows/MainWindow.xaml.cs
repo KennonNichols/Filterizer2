@@ -574,11 +574,10 @@ namespace Filterizer2.Windows
             if (CurrentlySelectedItem is not MediaItem mediaItem) return;
             EditMediaEntryWindow entryWindow = new EditMediaEntryWindow(mediaItem);
             PausePlayer();
-            entryWindow.ShowDialog();
-
-            MediaRepository.UpdateMedia(mediaItem);
-
-            ReloadAllMediaItems();
+            if (entryWindow.ShowDialog() ?? true)
+            {
+	            ReloadAllMediaItems();
+            }
         }
 
         private void CreateAlbumButton_Click(object sender, RoutedEventArgs e)
