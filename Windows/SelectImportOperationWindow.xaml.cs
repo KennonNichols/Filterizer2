@@ -5,7 +5,7 @@ namespace Filterizer2.Windows
 	/// <summary>
 	/// False is overwrite, true is append
 	/// </summary>
-	public partial class SelectImportOperationWindow : Window
+	public partial class SelectImportOperationWindow
 	{
 		public SelectImportOperationWindow()
 		{

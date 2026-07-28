@@ -3,6 +3,8 @@ using System.Security.Policy;
 using System.Text;
 using System.Windows.Documents;
 using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
 
 namespace Filterizer2
 {

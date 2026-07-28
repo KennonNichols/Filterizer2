@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Filterizer2.Windows
 {

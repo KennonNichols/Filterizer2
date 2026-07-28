@@ -14,6 +14,12 @@ using Vlc.DotNet.Core;
 using Vlc.DotNet.Core.Interops.Signatures;
 using XamlAnimatedGif;
 using static Filterizer2.MediaExtension;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using MessageBox = System.Windows.MessageBox;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Path = System.IO.Path;
 
 namespace Filterizer2.Windows

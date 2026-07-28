@@ -2,10 +2,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
 
 namespace Filterizer2.Windows
 {
-	public partial class ViewMasterTagHierarchy : Window
+	public partial class ViewMasterTagHierarchy
 	{
 		public ViewMasterTagHierarchy(TagItem? tagToView = null)
 		{

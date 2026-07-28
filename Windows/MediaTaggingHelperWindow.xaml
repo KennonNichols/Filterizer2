@@ -1,15 +1,16 @@
-<Window x:Class="Filterizer2.Windows.MediaTaggingHelperWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:windows="clr-namespace:Filterizer2.Windows"
-        xmlns:controls="clr-namespace:Filterizer2.Controls"
-        mc:Ignorable="d"
-        Title="Media Tagging Helper"
-        Height="850"
-        Width="1400"
-        WindowStartupLocation="CenterOwner" d:DataContext="{d:DesignInstance Type=windows:MediaTaggingHelperWindow, IsDesignTimeCreatable=False}">
+<filterizer2:FilterizerWindow x:Class="Filterizer2.Windows.MediaTaggingHelperWindow"
+                              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                              xmlns:windows="clr-namespace:Filterizer2.Windows"
+                              xmlns:controls="clr-namespace:Filterizer2.Controls"
+                              xmlns:filterizer2="clr-namespace:Filterizer2"
+                              mc:Ignorable="d"
+                              Title="Media Tagging Helper"
+                              Height="850"
+                              Width="1400"
+                              WindowStartupLocation="CenterOwner" d:DataContext="{d:DesignInstance Type=windows:MediaTaggingHelperWindow, IsDesignTimeCreatable=False}">
 
     <Grid Margin="12">
         <Grid.RowDefinitions>
@@ -281,4 +282,4 @@
             </Grid>
         </Grid>
     </Grid>
-</Window>
+</filterizer2:FilterizerWindow>

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Button = System.Windows.Controls.Button;
 
 namespace Filterizer2.Windows
 {

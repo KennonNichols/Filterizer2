@@ -1,6 +1,7 @@
 using System.Data.SQLite;
 using System.IO;
 using System.Windows;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Filterizer2
 {

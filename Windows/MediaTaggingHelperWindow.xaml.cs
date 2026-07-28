@@ -7,10 +7,14 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using ListBox = System.Windows.Controls.ListBox;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Filterizer2.Windows
 {
-	public partial class MediaTaggingHelperWindow : Window
+	public partial class MediaTaggingHelperWindow
 	{
 		private List<TagItem> _preexistingTags = new List<TagItem>();
 		private int _categoryIndex = 0;

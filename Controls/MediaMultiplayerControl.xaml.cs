@@ -9,6 +9,10 @@ using Vlc.DotNet.Core;
 using Vlc.DotNet.Core.Interops.Signatures;
 using XamlAnimatedGif;
 using static Filterizer2.MediaExtension;
+using MessageBox = System.Windows.MessageBox;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Point = System.Windows.Point;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace Filterizer2.Controls
 {

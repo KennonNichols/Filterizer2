@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using XamlAnimatedGif;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Filterizer2.Windows
 {

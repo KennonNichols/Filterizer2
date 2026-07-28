@@ -6,6 +6,8 @@ using System.IO;
 using System.Windows.Media;
 using System.Xml;
 using ImageMagick;
+using Brush = System.Windows.Media.Brush;
+using Color = System.Windows.Media.Color;
 
 namespace Filterizer2
 {

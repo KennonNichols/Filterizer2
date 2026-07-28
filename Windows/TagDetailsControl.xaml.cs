@@ -1,9 +1,11 @@
 using System.Windows.Controls;
 using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
+using UserControl = System.Windows.Controls.UserControl;
 
 namespace Filterizer2.Windows
 {
-	public partial class TagDetailsControl : UserControl
+	public partial class TagDetailsControl
 	{
 
 		private Brush _defaultBorderBrush;

@@ -1,7 +1,8 @@
-<Window x:Class="Filterizer2.Windows.SelectTagsWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Tag Dictionary" Height="450" Width="800">
+<filterizer2:FilterizerWindow x:Class="Filterizer2.Windows.SelectTagsWindow"
+                              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                              xmlns:filterizer2="clr-namespace:Filterizer2"
+                              Title="Tag Dictionary" Height="450" Width="800">
 
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
@@ -52,4 +53,4 @@
             </Border>
         </StackPanel>
     </Grid>
-</Window>
+</filterizer2:FilterizerWindow>
