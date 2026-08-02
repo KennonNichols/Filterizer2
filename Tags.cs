@@ -17,7 +17,7 @@ namespace Filterizer2
 		private static bool _checkedTagsFile;
 		public static readonly List<TagCategory> TagCategoriesInTaggingOrder = new List<TagCategory>();
 
-		public static List<TagCategory> NonChildableCats => _nonChildableCats ??= GetAllValues().Where(cat => !cat.IsChildable).ToList();
+		public static List<TagCategory> NonChildableCats => _nonChildableCats ??= GetAllTagCategories().Where(cat => !cat.IsChildable).ToList();
 		private static List<TagCategory>? _nonChildableCats;
 
 		
@@ -112,7 +112,7 @@ namespace Filterizer2
 			return Color.FromRgb(r, g, b);
 		}
 
-		public static IEnumerable<TagCategory> GetAllValues()
+		public static IEnumerable<TagCategory> GetAllTagCategories()
 		{
 			if (!_checkedTagsFile)
 			{

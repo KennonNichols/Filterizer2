@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using ListBox = System.Windows.Controls.ListBox;
 using MessageBox = System.Windows.MessageBox;
 
@@ -44,6 +45,10 @@ namespace Filterizer2.Windows
 			_currentCategory = Tags.TagCategoriesInTaggingOrder[0];
 			_currentSubCategory = _currentCategory.SubcategoriesInOrder[0];
 			UpdateContentForCurrentCategories();
+
+
+			SearchListBox.ItemContainerGenerator.StatusChanged += OnItemContainerGeneratorOnStatusChanged;
+			
 			_masterTags.CollectionChanged += Tags_CollectionChanged;
 			_queueTags.CollectionChanged += Tags_CollectionChanged;
 			_onTagSelectComplete = onTagSelectComplete;
@@ -51,6 +56,17 @@ namespace Filterizer2.Windows
 			if (mediaFilePath != null)
 			{
 				MediaPlayer.ShowMedia(mediaFilePath);
+			}
+
+			return;
+
+			void OnItemContainerGeneratorOnStatusChanged(object? sender, EventArgs e)
+			{
+				if (SearchListBox.ItemContainerGenerator.Status == System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
+				{
+					FocusListBoxIndex(SearchListBox, 0);
+					SearchListBox.ItemContainerGenerator.StatusChanged -= OnItemContainerGeneratorOnStatusChanged;
+				}
 			}
 		}
 
@@ -70,7 +86,7 @@ namespace Filterizer2.Windows
 		{
 			if (_queueTags.Count > 0)
 			{
-				suppressCollectionChanged = true;
+				_suppressCollectionChanged = true;
 				foreach (TagDisplayChildingItem queueTag in _queueTags)
 				{
 					if (!queueTag.IsImplied)
@@ -79,7 +95,7 @@ namespace Filterizer2.Windows
 					}
 				}
 				_queueTags.Clear();
-				suppressCollectionChanged = false;
+				_suppressCollectionChanged = false;
 				RefreshForDirtyCollection();
 			}
 
@@ -143,6 +159,10 @@ namespace Filterizer2.Windows
 			_tagChildrenCache.Clear();
 			SearchTextBox.Text = "";
 			UpdateContentForCurrentCategories();
+			
+			//Clear all memories
+			_selectionMemories.Clear();
+			MoveFocusToListBoxWithDefault(SearchListBox);
 		}
 
 		private void Reset()
@@ -171,7 +191,7 @@ namespace Filterizer2.Windows
 			bool anyFound = false;
 			foreach (TagItem preExistingTag in _preexistingTags )
 			{
-				if (preExistingTag.Name != "Tagging_In_Progress") continue;
+				if (preExistingTag.Name == "Tagging_In_Progress") continue;
 				if (Equals(preExistingTag.SubCategory, _currentSubCategory))
 				{
 					anyFound = true;
@@ -184,13 +204,13 @@ namespace Filterizer2.Windows
 			if (anyFound)
 			{
 				//Temporarily suppress collection updating, as we might add a large number of tags and do not need to refresh every time
-				suppressCollectionChanged = true;
+				_suppressCollectionChanged = true;
 				foreach (TagItem transferredTag in transferredTags)
 				{
 					_preexistingTags.RemoveAll(t => Equals(t, transferredTag));
 					_queueTags.Add(new TagDisplayChildingItem(transferredTag, IsTagImplied(transferredTag, currentTagIDs)));
 				}
-				suppressCollectionChanged = false;
+				_suppressCollectionChanged = false;
 				//Refresh once
 				RefreshForDirtyCollection();
 			}
@@ -198,6 +218,7 @@ namespace Filterizer2.Windows
 			{
 				RefreshSearchResults();
 			}
+			FocusListBoxIndex(SearchListBox, 0);
 		}
 
 		private HashSet<int>? _currentTagCollectionIdsCache;
@@ -216,29 +237,134 @@ namespace Filterizer2.Windows
 			MediaPlayer.Dispose();
 		}
 
+		private string _previousSearch;
 		private void RefreshSearchResults()
 		{
 			string search = SearchTextBox.Text.Trim();
+
+			bool shouldRememberPast = true;
+			if (_previousSearch != search || _searchResults.Count == 0)
+			{
+				//If the search changed, forget memories
+				_selectionMemories.Remove(SearchListBox);
+				shouldRememberPast = false;
+			}
+
+			_previousSearch = search;
 
 			HashSet<int> blacklist = GetCurrentTagCollectionIds();
 
 			IEnumerable<TagItem> tags = TagRepository.SearchTags(search, _currentSubCategory, blacklist);
 
+			
+			TagItem? rememberedItem = null;
+			List<(TagItem Tag, bool? IsImpliedInNewLife, int NewLifeIndex)> previousTagItemsAndHasBeenImplied =
+				new List<(TagItem Tag, bool? IsImpliedInNewLife, int NewLifeIndex)>();
+			HashSet<int> foundTagIDs = new HashSet<int>();
+			bool isRememberedItemInImplications = false;
+			if (shouldRememberPast)
+			{
+				if (_selectionMemories.TryGetValue(SearchListBox, out SelectionMemory memory))
+				{
+					TagDisplayChildingItem rememberedDisplayItem;
+					if (memory.Index != null)
+					{
+						int rememberedIndex = (int)memory.Index;
+						if (rememberedIndex >= _searchResults.Count)
+						{
+							rememberedIndex = _searchResults.Count - 1;
+						}
+						//Special mode if remembering index when this changes
+						rememberedDisplayItem = _searchResults[rememberedIndex];
+					}
+					else if (memory.Item != null)
+					{
+						rememberedDisplayItem = memory.Item;
+					}
+					else
+					{
+						goto SKIPIFUNFOUND;
+					}
+
+					rememberedItem = rememberedDisplayItem.Tag;
+					isRememberedItemInImplications = rememberedDisplayItem.IsImplied;
+					
+					//Iterate until we reach the item we want, and then stop. We will later work backwards from that to go to the previous child that isn't implied
+					//TODO make sure this works; it can skip further up the list if any items are implied or gone
+					int ind = 0;
+					foreach (TagDisplayChildingItem tagDisplayChildingItem in _searchResults)
+					{
+						previousTagItemsAndHasBeenImplied.Add((tagDisplayChildingItem.Tag, null, -1));
+						foundTagIDs.Add(tagDisplayChildingItem.Tag.Id);
+						
+						//Be done if we have reached the selected tag
+						if (ind == memory.Index)
+						{
+							break;
+						}
+						if (rememberedItem == tagDisplayChildingItem.Tag)
+						{
+							break;
+						}
+						
+						ind++;
+					}
+
+					SKIPIFUNFOUND:;
+				}
+			}
+			
 			_searchResults.Clear();
 
+			int index = 0;
 			foreach (TagDisplayChildingItem result in tags
 				         .Select(t => new TagDisplayChildingItem(t, IsTagImplied(t, blacklist)))
 				         .OrderBy(r => r.IsImplied)
-				         .ThenBy(r => r.Tag.Name))
+				         .ThenBy(r => r.Tag.Id))
 			{
+				if (shouldRememberPast)
+				{
+					if (foundTagIDs.Contains(result.Tag.Id))
+					{
+						previousTagItemsAndHasBeenImplied[
+							previousTagItemsAndHasBeenImplied.FindIndex(t => Equals(result.Tag, t.Tag))] = (result.Tag, result.IsImplied, index);
+					}
+					index++;
+				}
 				_searchResults.Add(result);
+			}
+			
+			
+			if (shouldRememberPast)
+			{
+				int i;
+				//Iterate backwards over all previous tags
+				for (i = previousTagItemsAndHasBeenImplied.Count - 1; i >= 0; i--)
+				{
+					(TagItem tag, bool? isImpliedInNewLife, int newLifeIndex) = previousTagItemsAndHasBeenImplied[i];
+					
+					//If we never found an answer to whether it was implied, it is no longer in the search results, and must be skipped
+					if (isImpliedInNewLife == null)
+					{
+						continue;
+					}
+					//If this tag is now in implications, and we were not in implications before, we skip it
+					if (isImpliedInNewLife == true && !isRememberedItemInImplications)
+					{
+						continue;
+					}
+					//Once we found one that exists and is not implied, break and use that index
+					_selectionMemories[SearchListBox] = new SelectionMemory(Index: newLifeIndex);
+					break;
+				}
+				
 			}
 		}
 
-		private bool suppressCollectionChanged = false;
+		private bool _suppressCollectionChanged;
 		private void Tags_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
 		{
-			if (!suppressCollectionChanged)
+			if (!_suppressCollectionChanged)
 			{
 				RefreshForDirtyCollection();
 			}
@@ -277,32 +403,22 @@ namespace Filterizer2.Windows
 
 		private bool IsTagImplied(TagItem tag, HashSet<int> currentSelectedTags)
 		{
-			HashSet<int> children;
-			if (!_tagChildrenCache.TryGetValue(tag.Name, out children))
-			{
-				children = TagRepository.GetAllTagIdsChildOf(tag.Id, null, true).ToHashSet();
-				// parents = tag.GetAllParentIdsRecursive().ToHashSet();
-				_tagChildrenCache[tag.Name] = children;
-			}
+			if (_tagChildrenCache.TryGetValue(tag.Name, out var children))
+				return children.Any(currentSelectedTags.Contains);
+			children = TagRepository.GetAllTagIdsChildOf(tag.Id, null, true).ToHashSet();
+			_tagChildrenCache[tag.Name] = children;
 			return children.Any(currentSelectedTags.Contains);
 		}
 
 		private void RefreshQueueChilding()
 		{
-			if (_queueTags.Count > 0)
+			if (_queueTags.Count <= 0) return;
+			HashSet<int> currentTags = GetCurrentTagCollectionIds();
+			// bool anyChange = false;
+			foreach (TagDisplayChildingItem tagDisplayChildingItem in _queueTags)
 			{
-				HashSet<int> currentTags = GetCurrentTagCollectionIds();
-				// bool anyChange = false;
-				foreach (TagDisplayChildingItem tagDisplayChildingItem in _queueTags)
-				{
-					// anyChange = true;
-					tagDisplayChildingItem.IsImplied = IsTagImplied(tagDisplayChildingItem.Tag, currentTags);
-				}
-			
-				// if (anyChange)
-				// {
-				// 	QueueListBox.Items.Refresh();
-				// }
+				// anyChange = true;
+				tagDisplayChildingItem.IsImplied = IsTagImplied(tagDisplayChildingItem.Tag, currentTags);
 			}
 		}
 		
@@ -332,15 +448,150 @@ namespace Filterizer2.Windows
 		private void SearchListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
 		{
 			//Move the item to the queueList, and update search
-			if (sender is ListBox { SelectedItem: TagDisplayChildingItem selectedItem })
+			if (Equals(sender, SearchListBox))
 			{
-				_queueTags.Add(selectedItem);
-				//Automatically select it
-				QueueListBox.SelectedItem = selectedItem.Tag;
-				QueueListBox.ScrollIntoView(QueueListBox.SelectedItem);
+				MoveSelectionBetweenListBoxes(SearchListBox, QueueListBox);
 			}
 		}
 
+		/// <summary>
+		/// Moves the selected item from listBoxToTakeFrom to listBoxToSendTo, and optionally focuses the keyboard on that tag, saving the current one from either item or index move.
+		/// </summary>
+		/// <param name="listBoxToTakeFrom"></param>
+		/// <param name="listBoxToSendTo"></param>
+		/// <param name="focusMovedTagMode"></param>
+		private void MoveSelectionBetweenListBoxes(ListBox listBoxToTakeFrom, ListBox listBoxToSendTo, FocusSaveMode focusMovedTagMode = FocusSaveMode.None)
+		{
+			if (listBoxToTakeFrom.SelectedItem is TagDisplayChildingItem selectedItem)
+			{
+				//Save if focus will change
+				if (focusMovedTagMode != FocusSaveMode.None)
+				{
+					SaveListBoxState(listBoxToTakeFrom, focusMovedTagMode);
+				}
+				//Remove from original
+				((ObservableCollection<TagDisplayChildingItem>)listBoxToTakeFrom.ItemsSource).Remove(selectedItem);
+				//Send to new
+				((ObservableCollection<TagDisplayChildingItem>)listBoxToSendTo.ItemsSource).Add(selectedItem);
+				//Focus
+				if (focusMovedTagMode != FocusSaveMode.None)
+				{
+					FocusListBoxItem(listBoxToSendTo, selectedItem);
+				}
+			}
+		}
+
+		private Dictionary<ListBox, SelectionMemory?> _selectionMemories = new Dictionary<ListBox, SelectionMemory?>();
+
+		private void FocusListBoxIndex(ListBox listBox, int index)
+		{
+			if (listBox.Items.Count == 0)
+			{
+				listBox.Focus();
+				Keyboard.Focus(listBox);
+				return;
+			}
+			
+			//TODO make sure it works if the index is 0, -1, and too high
+			//If we are past the last one, select that one
+			if (index >= listBox.Items.Count)
+			{
+				index = listBox.Items.Count - 1;
+			}
+			else if (index < 0)
+			{
+				index = 0;
+			}
+			
+			FocusListBoxItem(listBox, listBox.Items[index]);
+		}
+		
+		private void FocusListBoxItem(ListBox listBox, object? targetItem)
+		{
+			if (targetItem == null) return;
+
+			listBox.SelectedItem = targetItem;
+			listBox.ScrollIntoView(targetItem);
+
+			//Try to get the ListBoxItem container immediately
+			if (listBox.ItemContainerGenerator.ContainerFromItem(targetItem) is ListBoxItem container)
+			{
+				//Container exists, focus it directly
+				container.Focus();
+				Keyboard.Focus(container);
+			}
+			else
+			{
+				//Container doesn't exist yet (UI is still rendering).
+				//Wait until the container generation is finished, then focus it.
+				void OnItemContainerGeneratorOnStatusChanged(object? sender, EventArgs e)
+				{
+					if (listBox.ItemContainerGenerator.Status == System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
+					{
+						if (listBox.ItemContainerGenerator.ContainerFromItem(targetItem) is ListBoxItem retryContainer)
+						{
+							retryContainer.Focus();
+							Keyboard.Focus(retryContainer);
+							listBox.ItemContainerGenerator.StatusChanged -= OnItemContainerGeneratorOnStatusChanged;
+						}
+					}
+				}
+
+				listBox.ItemContainerGenerator.StatusChanged += OnItemContainerGeneratorOnStatusChanged;
+			}
+		}
+
+		/// <summary>
+		/// Makes the user focus on the chosen ListBox. If it remembers the user having been there, it goes to that remembered spot and clears the memory.
+		/// If listBoxToRemember is passed and focusSaveMode is not none, it will save the index/item. This should be the one that the user is moving OFF of.
+		/// </summary>
+		/// <param name="focusedListBox"></param>
+		/// <param name="listBoxToRemember"></param>
+		/// <param name="focusSaveMode"></param>
+		private void MoveFocusToListBoxWithDefault(ListBox focusedListBox, ListBox? listBoxToRemember = null, FocusSaveMode focusSaveMode = FocusSaveMode.None)
+		{
+			if (listBoxToRemember != null)
+			{
+				SaveListBoxState(listBoxToRemember, focusSaveMode);
+			}
+			
+			//Automatically focus and select any saved selections
+			if (_selectionMemories.TryGetValue(focusedListBox, out SelectionMemory? memory))
+			{
+				if (memory!.Index != null)
+				{
+					FocusListBoxIndex(focusedListBox, (int)memory.Index);
+					return;
+				}
+
+				if (memory.Item != null)
+				{
+					FocusListBoxItem(focusedListBox, memory.Item);
+					return;
+				}
+			}
+			FocusListBoxIndex(focusedListBox, 0);
+		}
+
+		private void SaveListBoxState(ListBox listBox, FocusSaveMode focusSaveMode)
+		{
+			switch (focusSaveMode)
+			{
+				case FocusSaveMode.Index:
+					_selectionMemories[listBox] =
+						new SelectionMemory(Index: listBox.SelectedIndex);
+					break;
+				case FocusSaveMode.Item:
+					_selectionMemories[listBox] =
+						new SelectionMemory(Item: listBox.SelectedItem as TagDisplayChildingItem);
+					break;
+				case FocusSaveMode.None:
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(focusSaveMode), focusSaveMode, null);
+			}
+		}
+			
 		private void QueueListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			if (_stifleAllSelectionChangedEvents)
@@ -391,11 +642,12 @@ namespace Filterizer2.Windows
 				ChildListHeader.Text = "Children of Selected Queue Tag";
 				ChildListHeader.Foreground = Brushes.Gray;
 			}
+			//Clear the memory of the child list box
+			_selectionMemories.Remove(ChildListBox);
 		}
 		
 		private void QueueListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
 		{
-			//Send it back to the parent
 			if (sender is ListBox { SelectedItem: TagDisplayChildingItem selectedItem })
 			{
 				_queueTags.Remove(selectedItem);
@@ -410,9 +662,9 @@ namespace Filterizer2.Windows
 				return;
 			}
 			DeselectAllThatAreNotSelected(sender);
-			if (sender is ListBox { SelectedItem: TagItem tagItem })
+			if (sender is ListBox { SelectedItem: TagDisplayChildingItem selectedItem })
 			{
-				TagDetails.DisplayTag(tagItem, false);
+				TagDetails.DisplayTag(selectedItem.Tag, false);
 			}
 		}
 
@@ -438,9 +690,127 @@ namespace Filterizer2.Windows
 				TagDetails.DisplayTag(tagItem, false);
 			}
 		}
-		
-		
 
+		private void CreateTagButton_OnClick(object sender, RoutedEventArgs e)
+		{
+			EditTagWindow editTagWindow = new EditTagWindow(subCategory: _currentSubCategory);
+			MediaPlayer.PausePlayer();
+			editTagWindow.ShowDialog();
+			RefreshSearchResults();
+		}
+
+		private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+		{
+			//On search result box
+			if (SearchListBox.IsKeyboardFocusWithin)
+			{
+				switch (e.Key)
+				{
+					//Backspace for text
+					case Key.Back:
+						if (SearchTextBox.CaretIndex > 0)
+						{
+							int originalCaretIndex = SearchTextBox.CaretIndex;
+							SearchTextBox.Text = SearchTextBox.Text.Remove(SearchTextBox.CaretIndex - 1, 1);
+							SearchTextBox.CaretIndex = originalCaretIndex - 1;
+						}
+						e.Handled = true;
+						break;
+					//Delete for text
+					case Key.Delete:
+						if (SearchTextBox.CaretIndex < SearchTextBox.Text.Length)
+						{
+							int originalCaretIndex = SearchTextBox.CaretIndex;
+							SearchTextBox.Text = SearchTextBox.Text.Remove(SearchTextBox.CaretIndex, 1);
+							SearchTextBox.CaretIndex = originalCaretIndex;
+						}
+						e.Handled = true;
+						break;
+					//CTRL+Right moves to queue without moving tag
+					case Key.Right when Keyboard.Modifiers.HasFlag(ModifierKeys.Control):
+						//Move focus, saving our current index
+						MoveFocusToListBoxWithDefault(QueueListBox, listBoxToRemember: SearchListBox, FocusSaveMode.Item);
+						e.Handled = true;
+						break;
+					//Right key moves the tag from search box to queue, and focuses. Saves our current index
+					case Key.Right:
+						MoveSelectionBetweenListBoxes(SearchListBox, QueueListBox, FocusSaveMode.Index);
+						e.Handled = true;
+						break;
+				}
+			}
+			//On queue list box
+			else if (QueueListBox.IsKeyboardFocusWithin)
+			{
+				switch (e.Key)
+				{
+					//CTRL+Left returns to search results without moving tag
+					case Key.Left when Keyboard.Modifiers.HasFlag(ModifierKeys.Control):
+						//Move focus, saving our current item
+						MoveFocusToListBoxWithDefault(SearchListBox, listBoxToRemember: QueueListBox, FocusSaveMode.Item);
+						e.Handled = true;
+						break;
+					//Left removes the tag and returns to search results
+					case Key.Left:
+						//Save the state
+						SaveListBoxState(QueueListBox, FocusSaveMode.Index);
+						//Remove the tag
+						QueueTags.Remove((TagDisplayChildingItem)QueueListBox.SelectedItem);
+						//Move focus
+						MoveFocusToListBoxWithDefault(SearchListBox);
+						e.Handled = true;
+						break;
+					//CTRL+Right or CTRL+Down moves to child box
+					case Key.Right or Key.Down when Keyboard.Modifiers.HasFlag(ModifierKeys.Control):
+						MoveFocusToListBoxWithDefault(ChildListBox, listBoxToRemember: QueueListBox, FocusSaveMode.Item);
+						e.Handled = true;
+						break;
+				}
+			}
+			//On child list box
+			else if (ChildListBox.IsKeyboardFocusWithin)
+			{
+				switch (e.Key)
+				{
+					//CTRL+Up or CTRL+Right moves focus to queue without moving tag
+					case Key.Up or Key.Right when Keyboard.Modifiers.HasFlag(ModifierKeys.Control):
+						//Move focus to queue, saving our current index
+						MoveFocusToListBoxWithDefault(QueueListBox, listBoxToRemember: ChildListBox, FocusSaveMode.Index);
+						e.Handled = true;
+						break;
+					//Right moves the tag to queue without moving the focus
+					case Key.Right:
+						_queueTags.Add((TagDisplayChildingItem)ChildListBox.SelectedItem);
+						RepopulateChildListBox();
+						e.Handled = true;
+						break;
+					//CTRL+Left returns to search results without any side effect
+					case Key.Left when Keyboard.Modifiers.HasFlag(ModifierKeys.Control):
+						//Move focus, saving our current item
+						MoveFocusToListBoxWithDefault(SearchListBox, listBoxToRemember: ChildListBox, FocusSaveMode.Item);
+						e.Handled = true;
+						break;
+				}
+			}
+		}
+
+		private void SearchListBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+		{
+			//Search results text will go into search field
+			int savedCaretIndex = SearchTextBox.CaretIndex;
+			SearchTextBox.Text = SearchTextBox.Text.Insert(SearchTextBox.CaretIndex, e.Text);
+			SearchTextBox.CaretIndex = savedCaretIndex + e.Text.Length;
+			e.Handled = true; 
+		}
+
+		private enum FocusSaveMode
+		{
+			Index,
+			Item,
+			None
+		}
+
+		public record SelectionMemory(int? Index = null, TagDisplayChildingItem? Item = null);
 		
 		public class TagDisplayChildingItem : INotifyPropertyChanged
 		{

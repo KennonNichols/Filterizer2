@@ -22,17 +22,26 @@ namespace Filterizer2.Windows
 
         private readonly TagItem? _editingTag;
         
-        public EditTagWindow(TagItem? tagItem = null)
+        public EditTagWindow(TagItem? tagItem = null, TagSubCategory? subCategory = null)
         {
             InitializeComponent();
 
             _editingTag = tagItem;
-            
-            TagTypeComboBox.ItemsSource = Tags.GetAllValues();
-            TagTypeComboBox.SelectedIndex = 0; // Select the first item by default
 
-            // Set the initial colors and description based on the default selection
-            UpdateUiForSelectedTagType((TagCategory)TagTypeComboBox.SelectedItem);
+            List<TagCategory> categories = Tags.GetAllTagCategories().ToList();
+            TagTypeComboBox.ItemsSource = categories;
+
+            if (subCategory == null)
+            {
+	            TagTypeComboBox.SelectedIndex = 0; //Select the first item by default
+            }
+            else
+            {
+	            TagTypeComboBox.SelectedIndex = categories.FindIndex(cat => subCategory.Parent.Title == cat.Title);
+            }
+
+            //Set the initial colors and description based on the default selection
+            UpdateUiForSelectedTagType((TagCategory)TagTypeComboBox.SelectedItem, subCategory);
 
             if (tagItem != null) SetData(tagItem);
         }
@@ -84,26 +93,34 @@ namespace Filterizer2.Windows
 	        }
         }
 
-        private void UpdateUiForSelectedTagType(TagCategory tagType)
+        private void UpdateUiForSelectedTagType(TagCategory tagType, TagSubCategory? subType = null)
         {
-            // Get the color, title, and description for the selected TagType
+            //Get the color, title, and description for the selected TagType
             var color = tagType.Color;
             var description = tagType.Description;
 
-            // Update the border colors
+            //Update the border colors
             MainBorder.BorderBrush = new SolidColorBrush(color);
             TagNameTextBox.BorderBrush = new SolidColorBrush(color);
             TagTypeComboBox.BorderBrush = new SolidColorBrush(color);
             TagDescriptionTextBox.BorderBrush = new SolidColorBrush(color);
 
-            // Update the description text block
+            //Update the description text block
             TagDescriptionTextBlock.Text = description;
             TagDescriptionTextBlock.Foreground = new SolidColorBrush(color);
 
             TagSubDescriptionTextBlock.Foreground = new SolidColorBrush(color);
             
             TagSubtypeComboBox.ItemsSource = tagType.SubcategoriesInOrder;
-            TagSubtypeComboBox.SelectedIndex = tagType.SubcategoriesInOrder.Count - 1; // Select misc by default
+            if (subType == null)
+            {
+	            TagSubtypeComboBox.SelectedIndex = tagType.SubcategoriesInOrder.Count - 1; //Select misc by default
+            }
+            else
+            {
+	            TagSubtypeComboBox.SelectedIndex =
+		            tagType.SubcategoriesInOrder.FindIndex(subCat => subCat.Equals(subType));
+            }
         }
 
         private void CreateTagButton_Click(object sender, RoutedEventArgs e)

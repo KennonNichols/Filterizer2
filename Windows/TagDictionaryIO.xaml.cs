@@ -14,15 +14,19 @@ namespace Filterizer2.Windows
 
 		private void ExportButton_OnClick(object sender, RoutedEventArgs e)
 		{
-			List<TagItem> unorderedTags = TagRepository.GetTags().ToList();
+			Dictionary<int, TagItem> unorderedTags = TagRepository.GetTags().ToDictionary(t => t.Id);
 			List<TagItem> lastPassAddedTags = new List<TagItem>();
 			HashSet<TagItem> addedTags = new HashSet<TagItem>();
 			//Load it up first with the categories
-			List<TransientDisplayItem> transientDisplayTags = (from object allValue in Tags.GetAllValues() select new TransientDisplayCategoryItem((TagCategory)allValue)).Cast<TransientDisplayItem>().ToList();
+			List<TransientDisplayItem> transientDisplayTags = (from object allValue in Tags.GetAllTagCategories() select new TransientDisplayCategoryItem((TagCategory)allValue)).Cast<TransientDisplayItem>().ToList();
 
 
-			//Add all tags with no parent OR that are members of a special category
-			foreach (var unorderedTag in unorderedTags.Where(unorderedTag => !unorderedTag.IsChildable || unorderedTag.ImmediateParentIDs.Count == 0))
+			//Add all tags that have no true parent
+			foreach (var (_, unorderedTag) in unorderedTags.Where(var =>
+			         {
+				         var (_, tagItem) = var;
+				         return !tagItem.MayBeTrueChild(unorderedTags);
+			         }))
 			{
 				//insert somewhere
 				int categoryLocation = transientDisplayTags.FindIndex(item =>
@@ -33,7 +37,11 @@ namespace Filterizer2.Windows
 				transientDisplayTags.Insert(categoryLocation + 1, new TransientDisplayTagItem(unorderedTag, 1));
 			}
 
-			unorderedTags.RemoveAll(item => lastPassAddedTags.Contains(item));
+			foreach (TagItem lastPassAddedTag in lastPassAddedTags)
+			{
+				unorderedTags.Remove(lastPassAddedTag.Id);
+			}
+			
 			lastPassAddedTags.Clear();
 
 			int indent = 1;
@@ -42,7 +50,7 @@ namespace Filterizer2.Windows
 				indent++;
 				//Get all tags where their first parent is loaded right now
 
-				foreach (var unorderedTag in unorderedTags)
+				foreach (var  (_, unorderedTag) in unorderedTags)
 				{
 					TagItem primaryParent = unorderedTag.ImmediateParentTags.First();
 					if (addedTags.All(item => item.Id != primaryParent.Id)) continue;
@@ -56,8 +64,9 @@ namespace Filterizer2.Windows
 				foreach (TagItem lastPassAddedTag in lastPassAddedTags)
 				{
 					addedTags.Add(lastPassAddedTag);
+					unorderedTags.Remove(lastPassAddedTag.Id);
 				}
-				unorderedTags.RemoveAll(item => lastPassAddedTags.Contains(item));
+				
 				lastPassAddedTags.Clear();
 			}
 

@@ -23,6 +23,27 @@ namespace Filterizer2
         public List<int> ImmediateParentIDs { get; set; } = new List<int>();
         public bool IsChildable => Category?.IsChildable ?? true;
 
+        public bool MayBeTrueChild(Dictionary<int, TagItem> allTags)
+        {
+	        //If we belong to a category that does not child, we are not a child
+	        if (!IsChildable) return false;
+	        //If we have no parents, we are not a child
+	        if (ImmediateParentIDs.Count == 0) return false;
+	        //If our first parent is in a separate category, we are not a true child
+	        if (allTags[ImmediateParentIDs[0]].Category != Category) return false;
+	        //If none of the above are satisfied; we may be a true child
+	        return true;
+        }
+
+        public bool IsTrueChildOf(TagItem tagItem)
+        {
+	        if (!IsChildable) return false;
+	        if (ImmediateParentIDs.Count == 0) return false;
+	        if (tagItem.Category != Category) return false;
+	        if (tagItem.Id != ImmediateParentIDs[0]) return false;
+	        return true;
+        }
+        
         public IEnumerable<TagItem> ImmediateParentTags
         {
 	        get
@@ -130,10 +151,21 @@ namespace Filterizer2
 		        builder.Append(" $" + SubCategory.TagString);
 	        }
 
-	        if (ImmediateParentIDs.Count > 1)
+	        bool isFirstParent = true;
+	        if (ImmediateParentIDs.Count > 0)
 	        {
-		        foreach (TagItem tagItem in ImmediateParentTags.Skip(1))
+		        foreach (TagItem tagItem in ImmediateParentTags)
 		        {
+			        if (isFirstParent)
+			        {
+				        //First parent is only shown if it's of a different category than the tag, or the tag is not childable
+				        if (!IsChildable || tagItem.Category != Category)
+				        {
+					        builder.Append(" >" + tagItem.Name);
+				        }
+				        isFirstParent = false;
+				        continue;
+			        }
 			        builder.Append(" >" + tagItem.Name);
 		        }
 	        }
@@ -144,6 +176,12 @@ namespace Filterizer2
         public override string ToString()
         {
 	        return Name;
+        }
+
+        public override bool Equals(object? obj)
+        {
+	        if (obj is not TagItem comparedTag) return false;
+	        return comparedTag.Id == Id;
         }
     }
 }

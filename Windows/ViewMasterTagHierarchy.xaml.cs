@@ -74,12 +74,12 @@ namespace Filterizer2.Windows
 
 		private void LoadTags()
 		{
-			HashSet<TagItem> allTags = TagRepository.GetTags().ToHashSet();
+			Dictionary<int, TagItem> allTags = TagRepository.GetTags().ToDictionary(t => t.Id);
 			
 			List<HierarchyViewPiece> currentUsedHierarchyLevel = new List<HierarchyViewPiece>();
 			HierarchyViewPiece masterPiece = new HierarchyViewMasterItem();
 			
-			foreach (HierarchyViewPiece categoryViewPiece in (from object allValue in Tags.GetAllValues() select new HierarchyViewCategory((TagCategory)allValue)).Cast<HierarchyViewPiece>())
+			foreach (HierarchyViewPiece categoryViewPiece in (from object allValue in Tags.GetAllTagCategories() select new HierarchyViewCategory((TagCategory)allValue)).Cast<HierarchyViewPiece>())
 			{
 				masterPiece.Children.Add(categoryViewPiece);
 				currentUsedHierarchyLevel.Add(categoryViewPiece);
@@ -91,8 +91,12 @@ namespace Filterizer2.Windows
 			currentUsedHierarchyLevel.Clear();
 
 			//Add all tags with no parent, or children of a category that does not subscribe to parent/child hierarchy
-			foreach (var tagItem in allTags.Where(unorderedTag => unorderedTag.ImmediateParentIDs.Count == 0 || !unorderedTag.IsChildable))
+			foreach ((int id, TagItem tagItem) in allTags)
 			{
+				if (tagItem.MayBeTrueChild(allTags))
+				{
+					return;
+				}
 				HierarchyViewPiece parentPiece = lastUsedHierarchyLevel.Find(item =>
 					item is HierarchyViewCategory catItem && catItem.Category == tagItem.Category) ?? throw new InvalidOperationException("Tag has nonexistent category.");
 
@@ -113,10 +117,15 @@ namespace Filterizer2.Windows
 				{
 					if (possibleParentPiece is not HierarchyViewTag hierarchyTag) continue;
 					int parentTagId = hierarchyTag.Tag.Id;
-					foreach (var hierarchyChildTag in from possibleChildTag in allTags where (possibleChildTag.ImmediateParentIDs.Contains(parentTagId) && possibleChildTag.IsChildable) select new HierarchyViewTag(possibleChildTag, possibleChildTag.ImmediateParentIDs[0] == parentTagId))
+					//For each child tag
+					foreach (var (_, tag) in allTags)
 					{
-						currentUsedHierarchyLevel.Add(hierarchyChildTag);
-						possibleParentPiece.Children.Add(hierarchyChildTag);
+						if (tag.ImmediateParentIDs.Contains(parentTagId) && tag.IsChildable)
+						{
+							var hierarchyChildTag = new HierarchyViewTag(tag, tag.IsTrueChildOf(hierarchyTag.Tag));
+							currentUsedHierarchyLevel.Add(hierarchyChildTag);
+							possibleParentPiece.Children.Add(hierarchyChildTag);
+						}
 					}
 				}
 				lastUsedHierarchyLevel = currentUsedHierarchyLevel.ToList();
