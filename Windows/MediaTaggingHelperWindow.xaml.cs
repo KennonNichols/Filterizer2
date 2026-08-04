@@ -21,6 +21,17 @@ namespace Filterizer2.Windows
 		private int _categoryIndex = 0;
 		private int _subcategoryIndex = 0;
 
+		public bool IsSingle
+		{
+			get => _isSingle;
+			set
+			{
+				_isSingle = value;
+				RefreshSearchResults();
+				RepopulateChildListBox();
+			}
+		}
+
 		private TagCategory? _currentCategory;
 		private TagSubCategory? _currentSubCategory;
 		
@@ -33,7 +44,7 @@ namespace Filterizer2.Windows
 		public ObservableCollection<TagDisplayChildingItem> QueueTags => _queueTags;
 		public ObservableCollection<TagDisplayChildingItem> SearchResults => _searchResults;
 		public ObservableCollection<TagDisplayChildingItem> ChildOfQueue => _childOfQueue;
-		
+
 		private Dictionary<string, HashSet<int>> _tagChildrenCache = new Dictionary<string, HashSet<int>>();
 
 		private Action<List<TagItem>>? _onTagSelectComplete;
@@ -41,7 +52,9 @@ namespace Filterizer2.Windows
 		public MediaTaggingHelperWindow(string? mediaFilePath, Action<List<TagItem>>? onTagSelectComplete = null)
 		{
 			InitializeComponent();
+
 			DataContext = this;
+			
 			_currentCategory = Tags.TagCategoriesInTaggingOrder[0];
 			_currentSubCategory = _currentCategory.SubcategoriesInOrder[0];
 			UpdateContentForCurrentCategories();
@@ -49,8 +62,8 @@ namespace Filterizer2.Windows
 
 			SearchListBox.ItemContainerGenerator.StatusChanged += OnItemContainerGeneratorOnStatusChanged;
 			
-			_masterTags.CollectionChanged += Tags_CollectionChanged;
-			_queueTags.CollectionChanged += Tags_CollectionChanged;
+			_masterTags.CollectionChanged += MasterTags_CollectionChanged;
+			_queueTags.CollectionChanged += Queue_CollectionChanged;
 			_onTagSelectComplete = onTagSelectComplete;
 
 			if (mediaFilePath != null)
@@ -96,7 +109,7 @@ namespace Filterizer2.Windows
 				}
 				_queueTags.Clear();
 				_suppressCollectionChanged = false;
-				RefreshForDirtyCollection();
+				ForceCollectionChangedHandler();
 			}
 
 			_subcategoryIndex++;
@@ -212,7 +225,7 @@ namespace Filterizer2.Windows
 				}
 				_suppressCollectionChanged = false;
 				//Refresh once
-				RefreshForDirtyCollection();
+				ForceCollectionChangedHandler();
 			}
 			else
 			{
@@ -221,7 +234,14 @@ namespace Filterizer2.Windows
 			FocusListBoxIndex(SearchListBox, 0);
 		}
 
+		/// <summary>
+		/// All tags both in the queue and the master collection.
+		/// </summary>
 		private HashSet<int>? _currentTagCollectionIdsCache;
+		/// <summary>
+		/// Get all tags both in the queue and the master collection.
+		/// </summary>
+		/// <returns></returns>
 		private HashSet<int> GetCurrentTagCollectionIds()
 		{
 			return _currentTagCollectionIdsCache ??=
@@ -230,6 +250,61 @@ namespace Filterizer2.Windows
 				.._queueTags.Select(t => t.Tag.Id)
 			];
 		}
+		/// <summary>
+		/// All tags in the master collection AND implied by those tags
+		/// </summary>
+		private HashSet<int>? _currentMasterTagFullCollectionIdsCache;
+		private HashSet<int> GetCurrentMasterTagFullCollectionIds()
+		{
+			if (_currentMasterTagFullCollectionIdsCache != null) return _currentMasterTagFullCollectionIdsCache;
+			_currentMasterTagFullCollectionIdsCache = new HashSet<int>();
+			
+			foreach (TagItem masterTag in _masterTags)
+			{
+				_currentMasterTagFullCollectionIdsCache.Add(masterTag.Id);
+				foreach (int id in masterTag.GetAllParentIdsRecursive())
+				{
+					_currentMasterTagFullCollectionIdsCache.Add(id);
+				}
+			}
+
+			return _currentMasterTagFullCollectionIdsCache;
+		}
+		/// <summary>
+		/// All tags in the queue AND implied by those tags
+		/// </summary>
+		private HashSet<int>? _currentQueueTagFullCollectionIdsCache;
+		private HashSet<int> GetCurrentQueueTagFullCollectionIds()
+		{
+			if (_currentQueueTagFullCollectionIdsCache != null) return _currentQueueTagFullCollectionIdsCache;
+			_currentQueueTagFullCollectionIdsCache = new HashSet<int>();
+			
+			foreach (TagDisplayChildingItem queueTagDisplay in _queueTags)
+			{
+				TagItem queueTag = queueTagDisplay.Tag;
+				_currentQueueTagFullCollectionIdsCache.Add(queueTag.Id);
+				foreach (int id in queueTag.GetAllParentIdsRecursive())
+				{
+					_currentQueueTagFullCollectionIdsCache.Add(id);
+				}
+			}
+
+			return _currentQueueTagFullCollectionIdsCache;
+		}
+		/// <summary>
+		/// All tags both in the queue and the master collection AND implied by those tags
+		/// </summary>
+		private HashSet<int>? _currentAllTagFullCollectionIdsCache;
+		private HashSet<int> GetCurrentAllTagFullCollectionIdsCache()
+		{
+			return _currentAllTagFullCollectionIdsCache ??=
+			[
+				..GetCurrentMasterTagFullCollectionIds(),
+				..GetCurrentQueueTagFullCollectionIds()
+			];
+		}
+		
+		
 		
 		protected override void OnClosed(EventArgs e)
 		{
@@ -255,9 +330,14 @@ namespace Filterizer2.Windows
 			HashSet<int> blacklist = GetCurrentTagCollectionIds();
 
 			IEnumerable<TagItem> tags = TagRepository.SearchTags(search, _currentSubCategory, blacklist);
-
 			
-			TagItem? rememberedItem = null;
+			//Filter all tags that are excluded by our current tags if in single mode
+			if (IsSingle)
+			{
+				tags = tags.Where(item => !item.ExcludedByIDs.Any(id => GetCurrentAllTagFullCollectionIdsCache().Contains(id)));
+			}
+			
+			TagItem? rememberedItem;
 			List<(TagItem Tag, bool? IsImpliedInNewLife, int NewLifeIndex)> previousTagItemsAndHasBeenImplied =
 				new List<(TagItem Tag, bool? IsImpliedInNewLife, int NewLifeIndex)>();
 			HashSet<int> foundTagIDs = new HashSet<int>();
@@ -362,10 +442,35 @@ namespace Filterizer2.Windows
 		}
 
 		private bool _suppressCollectionChanged;
+
+		private void ForceCollectionChangedHandler()
+		{
+			Queue_CollectionChanged(null, null);
+			MasterTags_CollectionChanged(null, null);
+		}
+		private void Queue_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (!_suppressCollectionChanged)
+			{
+				_currentQueueTagFullCollectionIdsCache = null;
+				Tags_CollectionChanged(sender, e);
+			}
+		}
+		
+		private void MasterTags_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (!_suppressCollectionChanged)
+			{
+				_currentMasterTagFullCollectionIdsCache = null;
+				Tags_CollectionChanged(sender, e);
+			}
+		}
+
 		private void Tags_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
 		{
 			if (!_suppressCollectionChanged)
 			{
+				_currentAllTagFullCollectionIdsCache = null;
 				RefreshForDirtyCollection();
 			}
 		}
@@ -482,6 +587,7 @@ namespace Filterizer2.Windows
 		}
 
 		private Dictionary<ListBox, SelectionMemory?> _selectionMemories = new Dictionary<ListBox, SelectionMemory?>();
+		private bool _isSingle;
 
 		private void FocusListBoxIndex(ListBox listBox, int index)
 		{
@@ -621,6 +727,11 @@ namespace Filterizer2.Windows
 				_childOfQueue.Clear();
 				foreach (TagItem childTag in TagRepository.GetAllTagsChildOf(parentTagItem.Tag.Id, blacklist))
 				{
+					//Filter all tags that are excluded by our current tags if in single mode
+					if (IsSingle && childTag.ExcludedByIDs.Any(id => GetCurrentAllTagFullCollectionIdsCache().Contains(id)))
+					{
+						continue;
+					}
 					anyFound = true;
 					_childOfQueue.Add(new TagDisplayChildingItem(childTag, IsTagImplied(childTag, blacklist)));
 				}
@@ -801,6 +912,43 @@ namespace Filterizer2.Windows
 			SearchTextBox.Text = SearchTextBox.Text.Insert(SearchTextBox.CaretIndex, e.Text);
 			SearchTextBox.CaretIndex = savedCaretIndex + e.Text.Length;
 			e.Handled = true; 
+		}
+
+		private AdvancedTaggerHelpWindow? _helpWindow;
+		private void HelpButton_OnClick(object sender, RoutedEventArgs e)
+		{
+			if (_helpWindow == null)
+			{
+				_helpWindow = new AdvancedTaggerHelpWindow()
+				{
+					Owner = this
+				};
+
+				_helpWindow.Closed += (_, _) => _helpWindow = null;
+
+				_helpWindow.Show();
+			}
+			else
+			{
+				if (_helpWindow.IsVisible)
+					_helpWindow.Hide();
+				else
+					_helpWindow.Show();
+			}
+		}
+
+		private void Window_Closing(object? sender, CancelEventArgs e)
+		{
+			MessageBoxResult result = MessageBox.Show(
+				"Are you sure you want to close the tagging window without saving?", 
+				"Confirm Exit", 
+				MessageBoxButton.YesNo, 
+				MessageBoxImage.Question);
+
+			if (result == MessageBoxResult.No)
+			{
+				e.Cancel = true;
+			}
 		}
 
 		private enum FocusSaveMode

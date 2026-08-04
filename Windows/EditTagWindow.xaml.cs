@@ -9,14 +9,15 @@ using TextBox = System.Windows.Controls.TextBox;
 
 namespace Filterizer2.Windows
 {
-    public partial class EditTagWindow: ISelectsTags
+    public partial class EditTagWindow
     {
 	    private List<string> Aliases { get; } = new List<string>();
         private List<int> ParentIds { get; } = new List<int>();
+        private List<int> ExcluderIds { get; } = new List<int>();
 
-        [GeneratedRegex("[@$\"\\s>]")]
+        [GeneratedRegex("[@$\"\\s>!]")]
         private static partial Regex ForbiddenChars();
-        [GeneratedRegex("[@$\"\\t\\r\\n>]")]
+        [GeneratedRegex("[@$\"\\t\\r\\n>!]")]
         private static partial Regex ForbiddenCharsDescription();
         
 
@@ -71,6 +72,13 @@ namespace Filterizer2.Windows
             {
 	            ParentsListBox.Items.Add(tagItemParent);
 	            ParentIds.Add(tagItemParent.Id);
+            }
+            
+            //Excluders
+            foreach (var tagItemExcluder in tagItem.ExcludedByTags)
+            {
+	            ExclusionsListBox.Items.Add(tagItemExcluder);
+	            ExcluderIds.Add(tagItemExcluder.Id);
             }
         }
 
@@ -144,6 +152,7 @@ namespace Filterizer2.Windows
                 _editingTag.SubCategory = selectedTagSubtype;
                 _editingTag.Aliases = Aliases;
                 _editingTag.ImmediateParentIDs = ParentIds;
+                _editingTag.ExcludedByIDs = ExcluderIds;
                 
                 TagRepository.UpdateTag(_editingTag);
             }
@@ -156,7 +165,8 @@ namespace Filterizer2.Windows
                     SubCategory = selectedTagSubtype,
                     Description = tagDescription,
                     Aliases = Aliases,
-                    ImmediateParentIDs = ParentIds
+                    ImmediateParentIDs = ParentIds,
+                    ExcludedByIDs = ExcluderIds
                 };
 
                 TagRepository.AddTag(newTag);
@@ -198,7 +208,7 @@ namespace Filterizer2.Windows
             }
         }
 
-        public void OnTagSelectComplete(List<TagItem> parents)
+        public void OnParentSelectComplete(List<TagItem> parents)
         {
 	        ParentIds.Clear();
 	        ParentsListBox.Items.Clear();
@@ -206,7 +216,7 @@ namespace Filterizer2.Windows
 	        {
 		        ParentIds.Add(parent.Id);
 	        }
-	        foreach (var tagItem in parents)
+	        foreach (TagItem tagItem in parents)
 	        {
 		        ParentsListBox.Items.Add(tagItem);
 	        }
@@ -217,7 +227,30 @@ namespace Filterizer2.Windows
 
         private void EditParent_Click(object sender, RoutedEventArgs e)
         {
-	        SelectTagsWindow selectTagsWindow = new SelectTagsWindow(this, _editingTag);
+	        SelectTagsWindow selectTagsWindow = new SelectTagsWindow(OnParentSelectComplete, GetParents, _editingTag);
+	        selectTagsWindow.Show();
+        }
+        
+        public void OnExclusionsSelectComplete(List<TagItem> excluders)
+        {
+	        ExcluderIds.Clear();
+	        ExclusionsListBox.Items.Clear();
+	        foreach (TagItem excluder in excluders)
+	        {
+		        ExcluderIds.Add(excluder.Id);
+	        }
+	        foreach (TagItem tagItem in excluders)
+	        {
+		        ExclusionsListBox.Items.Add(tagItem);
+	        }
+        }
+
+        public List<TagItem> GetExcluders => _editingTag?.ExcludedByTags.ToList() ??
+                                           ExclusionsListBox.Items.SourceCollection.Cast<TagItem>().ToList();
+        
+        private void EditExclusions_Click(object sender, RoutedEventArgs e)
+        {
+	        SelectTagsWindow selectTagsWindow = new SelectTagsWindow(OnExclusionsSelectComplete, GetExcluders);
 	        selectTagsWindow.Show();
         }
 
@@ -283,12 +316,5 @@ namespace Filterizer2.Windows
         {
 	        return source is TextBox { Name: "TagDescriptionTextBox" } ? ForbiddenCharsDescription() : ForbiddenChars();
         }
-    }
-
-    public interface ISelectsTags
-    {
-	    public void OnTagSelectComplete(List<TagItem> parents);
-
-	    public List<TagItem> GetParents { get; }
     }
 }

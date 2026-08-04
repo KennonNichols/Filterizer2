@@ -3,9 +3,11 @@
                               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                               xmlns:filterizer2="clr-namespace:Filterizer2"
                               Title="Create New Tag" Height="Auto" Width="450">
-    <Border x:Name="MainBorder" BorderBrush="Gray" BorderThickness="2" CornerRadius="10" Padding="10">
-        <Grid>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="2">
+        <Border x:Name="MainBorder" BorderBrush="Gray" BorderThickness="2" CornerRadius="10" Padding="10">
+            <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -55,7 +57,6 @@
                 </Grid>
             </GroupBox>
             
-            
             <!-- Parents Management -->
             <GroupBox Grid.Row="2" Header="Parents" Margin="5">
                 <Grid>
@@ -69,6 +70,21 @@
                     </StackPanel>
                 </Grid>
             </GroupBox>
+            
+            <!-- Excluded By -->
+            <GroupBox Grid.Row="3" Header="Excluded By" Margin="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ListBox x:Name="ExclusionsListBox" Grid.Row="0" Margin="5" MinHeight="50"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+                        <Button Content="Edit Exclusions" Click="EditExclusions_Click" Margin="5"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
         </Grid>
-    </Border>
+        </Border>
+    </ScrollViewer>
 </filterizer2:FilterizerWindow>

@@ -392,6 +392,16 @@ namespace Filterizer2
 		        aliasCommand.Parameters.AddWithValue("@parentTagId", parentTagId);
 		        aliasCommand.ExecuteNonQuery();
 	        }
+            
+	        // Insert the excluders
+	        foreach (var excludingTagId in tag.ExcludedByIDs)
+	        {
+		        var aliasCommand = connection.CreateCommand();
+		        aliasCommand.CommandText = "INSERT INTO ExcludedByRelations (TagId, ParentTagId) VALUES (@tagId, @excludingTagId);";
+		        aliasCommand.Parameters.AddWithValue("@tagId", tagId);
+		        aliasCommand.Parameters.AddWithValue("@excludingTagId", excludingTagId);
+		        aliasCommand.ExecuteNonQuery();
+	        }
 
 	        tag.Id = (int)tagId;
 	        transaction.Commit();
@@ -439,6 +449,19 @@ namespace Filterizer2
 			        }
 		        }
 
+		        // Retrieve excluder IDs
+		        var excluderCommand = connection.CreateCommand();
+		        excluderCommand.CommandText = "SELECT ExcludingTagId FROM ExcludedByRelations WHERE TagId = @tagId";
+		        excluderCommand.Parameters.AddWithValue("@tagId", tag.Id);
+
+		        using (var excluderReader = excluderCommand.ExecuteReader())
+		        {
+			        while (excluderReader.Read())
+			        {
+				        tag.ExcludedByIDs.Add(excluderReader.GetInt32(0));
+			        }
+		        }
+
 		        return tag;
 	        }
 	        catch (Exception e)
@@ -448,51 +471,61 @@ namespace Filterizer2
 	        }
         }
 
-        public static void UpdateTag(TagItem editingTag)
+        public static void UpdateTag(TagItem editingTag, TagUpdateMode updateMode = TagUpdateMode.UpdateAll)
         {
             using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
 
             using var transaction = connection.BeginTransaction();
-            
 
 
-            using (var updateTagCommand = new SQLiteCommand(UpdateTagQuery, connection))
+            if (updateMode == TagUpdateMode.UpdateAll)
             {
-                updateTagCommand.Parameters.AddWithValue("@Name", editingTag.Name);
-                updateTagCommand.Parameters.AddWithValue("@Description", editingTag.Description);
-                updateTagCommand.Parameters.AddWithValue("@Category", editingTag.Category.Title);
-                updateTagCommand.Parameters.AddWithValue("@SubCategory", editingTag.SubCategory.TagStringForDatabase);
-                updateTagCommand.Parameters.AddWithValue("@Id", editingTag.Id);
+	            using (var updateTagCommand = new SQLiteCommand(UpdateTagQuery, connection))
+	            {
+		            updateTagCommand.Parameters.AddWithValue("@Name", editingTag.Name);
+		            updateTagCommand.Parameters.AddWithValue("@Description", editingTag.Description);
+		            updateTagCommand.Parameters.AddWithValue("@Category", editingTag.Category.Title);
+		            updateTagCommand.Parameters.AddWithValue("@SubCategory", editingTag.SubCategory.TagStringForDatabase);
+		            updateTagCommand.Parameters.AddWithValue("@Id", editingTag.Id);
                 
-                updateTagCommand.ExecuteNonQuery();
-            }
+		            updateTagCommand.ExecuteNonQuery();
+	            }
 
-            //Delete existing aliases from the TagAliases table for this tag
-            const string deleteAliasesQuery = "DELETE FROM TagAliases WHERE TagId = @TagId;";
+	            //Delete existing aliases from the TagAliases table for this tag
+	            const string deleteAliasesQuery = "DELETE FROM TagAliases WHERE TagId = @TagId;";
 
-            using (var deleteAliasesCommand = new SQLiteCommand(deleteAliasesQuery, connection))
-            {
-                deleteAliasesCommand.Parameters.AddWithValue("@TagId", editingTag.Id);
-                deleteAliasesCommand.ExecuteNonQuery();
-            }
+	            using (var deleteAliasesCommand = new SQLiteCommand(deleteAliasesQuery, connection))
+	            {
+		            deleteAliasesCommand.Parameters.AddWithValue("@TagId", editingTag.Id);
+		            deleteAliasesCommand.ExecuteNonQuery();
+	            }
 
-            //Insert new aliases into the TagAliases table
-            const string insertAliasQuery = "INSERT INTO TagAliases (TagId, Alias) VALUES (@TagId, @Alias);";
+	            //Insert new aliases into the TagAliases table
+	            const string insertAliasQuery = "INSERT INTO TagAliases (TagId, Alias) VALUES (@TagId, @Alias);";
 
-            using (var insertAliasCommand = new SQLiteCommand(insertAliasQuery, connection))
-            {
-                insertAliasCommand.Parameters.AddWithValue("@TagId", editingTag.Id);
+	            using (var insertAliasCommand = new SQLiteCommand(insertAliasQuery, connection))
+	            {
+		            insertAliasCommand.Parameters.AddWithValue("@TagId", editingTag.Id);
                 
-                foreach (var alias in editingTag.Aliases)
-                {
-                    insertAliasCommand.Parameters.AddWithValue("@Alias", alias);
-                    insertAliasCommand.ExecuteNonQuery();
-                    insertAliasCommand.Parameters.RemoveAt("@Alias"); //Clear parameter for the next loop iteration
-                }
+		            foreach (var alias in editingTag.Aliases)
+		            {
+			            insertAliasCommand.Parameters.AddWithValue("@Alias", alias);
+			            insertAliasCommand.ExecuteNonQuery();
+			            insertAliasCommand.Parameters.RemoveAt("@Alias"); //Clear parameter for the next loop iteration
+		            }
+	            }
             }
 
-            //Repeat for parental relationships
-            RegisterParentsOfTag(editingTag, connection);
+            if (updateMode is TagUpdateMode.UpdateAll or TagUpdateMode.UpdateParents)
+            {
+	            //Repeat for parental relationships
+	            RegisterParentsOfTag(editingTag, connection);
+            }
+            if (updateMode is TagUpdateMode.UpdateAll or TagUpdateMode.UpdateExclusions)
+            {
+	            //And exclusionary relationships
+	            RegisterExcludersOfTag(editingTag, connection);
+            }
             
             
             transaction.Commit();
@@ -525,6 +558,31 @@ namespace Filterizer2
 		        }
 	        }
         }
+        
+        public static void RegisterExcludersOfTag(TagItem tag, SQLiteConnection connection)
+        {
+	        const string deleteExcludersQuery = "DELETE FROM ExcludedByRelations WHERE TagId = @TagId;";
+
+	        using (var deleteExcludersCommand = new SQLiteCommand(deleteExcludersQuery, connection))
+	        {
+		        deleteExcludersCommand.Parameters.AddWithValue("@TagId", tag.Id);
+		        deleteExcludersCommand.ExecuteNonQuery();
+	        }
+            
+	        const string insertExcludersQuery = "INSERT INTO ExcludedByRelations (TagId, ExcludingTagId) VALUES (@TagId, @ExcludingTagId);";
+
+	        using (var insertExcluderCommand = new SQLiteCommand(insertExcludersQuery, connection))
+	        {
+		        insertExcluderCommand.Parameters.AddWithValue("@TagId", tag.Id);
+                
+		        foreach (int excludedById in tag.ExcludedByIDs)
+		        {
+			        insertExcluderCommand.Parameters.AddWithValue("@ExcludingTagId", excludedById);
+			        insertExcluderCommand.ExecuteNonQuery();
+			        insertExcluderCommand.Parameters.RemoveAt("@ExcludingTagId"); //Clear parameter for the next loop iteration
+		        }
+	        }
+        }
 
         public static void DeleteTag(TagItem tag)
         {
@@ -554,5 +612,12 @@ namespace Filterizer2
         }
         #endregion
         
+    }
+
+    public enum TagUpdateMode
+    {
+	    UpdateAll,
+	    UpdateExclusions,
+	    UpdateParents
     }
 }

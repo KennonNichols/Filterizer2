@@ -7,7 +7,7 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace Filterizer2.Windows
 {
-	public partial class EditAlbumWindow : IHasFilter, ISelectsTags
+	public partial class EditAlbumWindow : IHasFilter
 	{
         private AlbumItem _albumItem;
         private bool _isEditMode;
@@ -149,7 +149,7 @@ namespace Filterizer2.Windows
 
         private void AddAllTags_Click(object sender, RoutedEventArgs e)
         {
-	        SelectTagsWindow tagSelectWindow = new SelectTagsWindow(this, null);
+	        SelectTagsWindow tagSelectWindow = new SelectTagsWindow(OnTagSelectComplete);
 	        tagSelectWindow.ShowDialog();
         }
 
@@ -232,8 +232,5 @@ namespace Filterizer2.Windows
 		        }
 	        }
         }
-
-        public List<TagItem> GetParents => new List<TagItem>();
-
 	}
 }

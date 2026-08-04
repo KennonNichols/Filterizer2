@@ -11,8 +11,8 @@
                               Height="850"
                               Width="1400"
                               PreviewKeyDown="Window_PreviewKeyDown"
+                              Closing="Window_Closing"
                               WindowStartupLocation="CenterOwner" d:DataContext="{d:DesignInstance Type=windows:MediaTaggingHelperWindow, IsDesignTimeCreatable=False}">
-
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -118,7 +118,19 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                     </ListBox>
-                    <Button Grid.Row="3" Content="Create New Tag" Click="CreateTagButton_OnClick"/>
+                    <Grid Grid.Row="3" Margin="10, 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Button Content="Create New Tag" Margin="0, 5, 0, 0" Click="CreateTagButton_OnClick"/>
+                            <Label Content="Is Single Mode?" Margin="0, 5, 0, 0" ToolTip="Is this a single or a compilation media? A media should be single if there is one scene where no characters enter or leave, and the action does not change significantly. This is used to track if tags should be mutually exclusive; for example normally marking a media as 'solo' would hide all sex-related tags. But if your media has somebody masturbating alone and somebody enters, it is possible to have both 'solo' and 'sex' in one media." />
+                            <CheckBox VerticalAlignment="Center" Margin="0, 5, 5, 0" x:Name="IsSingleCheckBox" IsChecked="{Binding IsSingle}" ToolTip="Is this a single or a compilation media? A media should be single if there is one scene where no characters enter or leave, and the action does not change significantly. This is used to track if tags should be mutually exclusive; for example normally marking a media as 'solo' would hide all sex-related tags. But if your media has somebody masturbating alone and somebody enters, it is possible to have both 'solo' and 'sex' in one media."></CheckBox>
+                        </StackPanel>
+                        <Button Grid.Column="1" HorizontalAlignment="Right" Content="❔" Padding="5, 0" Margin="0, 5, 0, 0" Click="HelpButton_OnClick"/>
+                    </Grid>
                 </Grid>
             </Border>
 

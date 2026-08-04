@@ -43,17 +43,6 @@ namespace Filterizer2.Windows
             if (TagsListBox.SelectedItem is TagItem selectedTag)
             {
 	            bool hasParents = selectedTag.ImmediateParentTags.Any();
-                // TagTitleTextBlock.Text = selectedTag.Name;
-                // TagDescriptionTextBlock.Text = selectedTag.Description;
-                // TagAliasesTextBlock.Text = selectedTag.Aliases.Any() 
-                //     ? "Aliases: " + string.Join(", ", selectedTag.Aliases) 
-                //     : "No Aliases";
-                // TagParentsTextBlock.Text = hasParents
-	               //  ? "Implies: " + string.Join(", ", selectedTag.ImmediateParentTags) 
-	               //  : "Does not imply any other tags.";
-                //
-                // // Set the border color based on the TagType
-                // TagDetailsBorder.BorderBrush = new SolidColorBrush(selectedTag.Category.Color);
 
                 DeleteTagButton.IsEnabled = true;
                 EditTagButton.IsEnabled = true;
@@ -70,13 +59,6 @@ namespace Filterizer2.Windows
             }
             else
             {
-                // Clear the details if no tag is selected
-                // TagTitleTextBlock.Text = string.Empty;
-                // TagDescriptionTextBlock.Text = string.Empty;
-                // TagAliasesTextBlock.Text = string.Empty;
-                // TagParentsTextBlock.Text = string.Empty;
-                // TagDetailsBorder.BorderBrush = Brushes.Gray;
-                
                 DeleteTagButton.IsEnabled = false;
                 EditTagButton.IsEnabled = false;
             }

@@ -7,16 +7,23 @@ namespace Filterizer2.Windows
     public partial class SelectTagsWindow
     {
 	    private readonly List<TagItem> _tagList;
-	    private readonly ISelectsTags _parent;
+	    private readonly Action<List<TagItem>> _onComplete;
 	    private readonly TagItem? _childTag;
         
-        public SelectTagsWindow(ISelectsTags parent, TagItem? childTag)
+        public SelectTagsWindow( Action<List<TagItem>> onTagSelectComplete, List<TagItem>? preexistingTags = null, TagItem? childTag = null)
         {
             InitializeComponent();
 
             //If we are working on a fresh tag that hasn't even been built yet, there will be no parents.
-            _tagList = parent.GetParents;
-            _parent = parent;
+            if (preexistingTags != null)
+            {
+	            _tagList = preexistingTags;
+            }
+            else
+            {
+	            _tagList = new List<TagItem>();
+            }
+            _onComplete = onTagSelectComplete;
             _childTag = childTag;
 
             UpdateTags();
@@ -26,14 +33,14 @@ namespace Filterizer2.Windows
         {
 	        base.OnClosed(e);
 	        
-	        _parent.OnTagSelectComplete(_tagList);
+	        _onComplete.Invoke(_tagList);
         }
 
         //Handles the filtering of tags as the user types
         private void TagFilterTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             string filterText = TagFilterTextBox.Text.ToLower();
-
+            
             Func<TagItem, bool> tagValidator;
             if (_childTag == null)
             {

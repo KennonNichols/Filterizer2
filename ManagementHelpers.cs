@@ -121,6 +121,13 @@ namespace Filterizer2
                         FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE,
                         FOREIGN KEY (ParentTagId) REFERENCES Tags(Id) ON DELETE CASCADE
                     );", @"
+                    CREATE TABLE IF NOT EXISTS ExcludedByRelations (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        TagId INTEGER NOT NULL,
+                        ExcludingTagId INTEGER NOT NULL,
+                        FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE,
+                        FOREIGN KEY (ExcludingTagId) REFERENCES Tags(Id) ON DELETE CASCADE
+                    );", @"
                     CREATE TABLE IF NOT EXISTS AlbumMedia (
                         AlbumId INTEGER NOT NULL,
                         MediaId INTEGER NOT NULL,

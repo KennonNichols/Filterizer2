@@ -21,6 +21,8 @@ namespace Filterizer2
         /// Temporary list of IDs. Before all tags are loaded, we populate this field, then find parent tags later so all tags are loaded successfully
         /// </summary>
         public List<int> ImmediateParentIDs { get; set; } = new List<int>();
+        public List<int> ExcludedByIDs { get; set; } = new List<int>();
+        
         public bool IsChildable => Category?.IsChildable ?? true;
 
         public bool MayBeTrueChild(Dictionary<int, TagItem> allTags)
@@ -70,11 +72,43 @@ namespace Filterizer2
 				        ImmediateParentIDs.Remove(vanishedInt);
 			        }
 
-			        TagRepository.UpdateTag(this);
+			        TagRepository.UpdateTag(this, TagUpdateMode.UpdateParents);
 		        }
 	        }
         }
         
+        public IEnumerable<TagItem> ExcludedByTags
+        {
+	        get
+	        {
+		        List<int>? vanishedInts = null;
+		        foreach (var parentId in ExcludedByIDs)
+		        {
+			        if (TagRepository.TryGetTagById(parentId, out TagItem foundTag))
+			        {
+				        yield return foundTag;
+			        }
+			        else
+			        {
+				        //An orphaned excluder was not found, we need to update the media.
+				        vanishedInts ??= new List<int>();
+				        vanishedInts.Add(parentId);
+			        }
+		        }
+
+		        if (vanishedInts != null)
+		        {
+			        foreach (int vanishedInt in vanishedInts)
+			        {
+				        ExcludedByIDs.Remove(vanishedInt);
+			        }
+
+			        TagRepository.UpdateTag(this, TagUpdateMode.UpdateExclusions);
+		        }
+	        }
+        }
+
+
         public Brush DisplayColorBrush => Category.Brush;
         public HashSet<string> GetAllNamesAliasesAndParentNames()
         {
@@ -167,6 +201,14 @@ namespace Filterizer2
 				        continue;
 			        }
 			        builder.Append(" >" + tagItem.Name);
+		        }
+	        }
+	        
+	        if (ExcludedByIDs.Count > 0)
+	        {
+		        foreach (TagItem tagItem in ExcludedByTags)
+		        {
+			        builder.Append(" !" + tagItem.Name);
 		        }
 	        }
 

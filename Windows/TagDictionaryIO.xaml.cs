@@ -206,6 +206,31 @@ namespace Filterizer2.Windows
 				}
 			}
 			
+			//Check to make sure every desired excluder exists. Iterate over ever transient tag (to check their excluders)
+			foreach (var (_, transientTagItemForIO) in relatedTransientTags)
+			{
+				foreach (string excluderName in transientTagItemForIO.ExcluderNames)
+				{
+					//If the transient tags defines that excluder, set it as a transient excluder
+					if (newlyAddedTagItemsByName.TryGetValue(excluderName, out TagItem? tag))
+					{
+						transientTagItemForIO.TransientExcluders.Add(tag);
+					}
+					//Otherwise, if we are appending, check for existing excluders with that name
+					else if (existingTagsByName.TryGetValue(excluderName, out TagItem? existingTagAsExcluder))
+					{
+						transientTagItemForIO.TransientExcluders.Add(existingTagAsExcluder);
+					}
+					else
+					{
+						//We have found a missing excluder
+						MessageBox.Show($"Did not find excluder '{excluderName}' on tag at line {transientTagItemForIO.LineNumber}.", "Excluding error",
+							MessageBoxButton.OK, MessageBoxImage.Error);
+						return;
+					}
+				}
+			}
+			
 			//Delete ALL tags that aren't defined in this list if we are overwriting instead of appending
 			if (!isAppendOperation)
 			{
@@ -245,10 +270,12 @@ namespace Filterizer2.Windows
 					TagRepository.UpdateTag(tagItem);
 				}
 			}
+			//All tags in newlyAddedTagItemsByName have no parental relationships, because of what happened in that last loop.
 			
 			using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
 			using var transaction = connection.BeginTransaction();
 			
+			//Add parents and excluders
 			foreach (var (_, tagItem) in newlyAddedTagItemsByName)
 			{
 				foreach (TagItem transientParent in relatedTransientTags[tagItem].TransientParents)
@@ -256,8 +283,15 @@ namespace Filterizer2.Windows
 					//In the last loop any tags with an invalid ID set their IDs with TagRepository.AddTag(), so it should work fine to access at this point
 					tagItem.ImmediateParentIDs.Add(transientParent.Id);
 				}
+				
+				foreach (TagItem excluder in relatedTransientTags[tagItem].TransientExcluders)
+				{
+					tagItem.ExcludedByIDs.Add(excluder.Id);
+				}
+				
 				//This only works because every tag either had their parental relationships destroyed in the last loop, or never had parents to begin with
 				TagRepository.RegisterParentsOfTag(tagItem, connection);
+				TagRepository.RegisterExcludersOfTag(tagItem, connection);
 			}
 			
 			transaction.Commit();
@@ -340,6 +374,7 @@ namespace Filterizer2.Windows
 	                Name = tokens[0],
 	                Aliases = new List<string>(),
 	                ParentNames = new List<string>(),
+	                ExcluderNames = new List<string>(),
 	                Description = description,
 	                SubCategoryName = subCategoryName,
 	                LineNumber = lineNumber
@@ -369,6 +404,8 @@ namespace Filterizer2.Windows
 	                    item.Aliases.Add(token[1..]);
 	                else if (token.StartsWith('>'))
 	                    item.ParentNames.Add(token[1..]);
+	                else if (token.StartsWith('!'))
+		                item.ExcluderNames.Add(token[1..]);
 	                else
 	                {
 		                //We have found an invalid token.
@@ -423,8 +460,10 @@ namespace Filterizer2.Windows
 		public string Description;
 		public List<string> Aliases;
 		public List<string> ParentNames;
+		public List<string> ExcluderNames;
 
 		public List<TagItem> TransientParents = new List<TagItem>();
+		public List<TagItem> TransientExcluders = new List<TagItem>();
 
 		public override string ToString()
 		{
@@ -435,7 +474,8 @@ namespace Filterizer2.Windows
 			}
 			string aliasRead = Aliases.Count > 0 ? $"           Aliases: {string.Join(", ", Aliases)}." : "";
 			string parentsRead = ParentNames.Count > 0 ? $"           Parents: {string.Join(", ", ParentNames)}." : "";
-			return Name + ", " + CategoryName + "("+ SubCategoryName + ")" + desc + aliasRead + parentsRead;
+			string excludersRead = ExcluderNames.Count > 0 ? $"           Parents: {string.Join(", ", ExcluderNames)}." : "";
+			return Name + ", " + CategoryName + "("+ SubCategoryName + ")" + desc + aliasRead + parentsRead + excludersRead;
 		}
 	}
 

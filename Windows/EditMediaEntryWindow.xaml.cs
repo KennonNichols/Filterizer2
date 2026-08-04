@@ -12,11 +12,7 @@ namespace Filterizer2.Windows
 {
     public partial class EditMediaEntryWindow: INotifyPropertyChanged
     {
-        public string MediaTitle => TitleTextBox.Text;
-        public string MediaDescription => DescriptionTextBox.Text;
-        
-
-        public event PropertyChangedEventHandler? PropertyChanged;
+	    public event PropertyChangedEventHandler? PropertyChanged;
 
         private readonly string? _mediaFilePath;
         private readonly MediaItem _editingMediaItem;
@@ -44,7 +40,7 @@ namespace Filterizer2.Windows
             {
                 Title = "",
                 Description = "",
-                LocalFilename = Path.GetFileName(mediaFilePath)
+                LocalFilename = Path.GetFileName(mediaFilePath),
             };
             _mediaFilePath = mediaFilePath;
             
@@ -119,6 +115,7 @@ namespace Filterizer2.Windows
 	        _editingMediaItem.Description = DescriptionTextBox.Text;
 	        _editingMediaItem.SetTags(_currentTags.ToList());
 	        _editingMediaItem.LocalFilename = Path.GetFileName(_mediaFilePath);
+	        // _editingMediaItem.IsSingle = IsSingleCheckbox.IsChecked ?? false;
 	        
 	        MediaRepository.UpdateMedia(_editingMediaItem);
             DialogResult = true;
@@ -151,6 +148,7 @@ namespace Filterizer2.Windows
 	        TagSearchTextBox.Text = string.Empty;
 	        TagSearchResultsListBox.ItemsSource = null;
         }
+        
 
         // Handles removing a tag from the current tags list
         private void RemoveTagButton_Click(object sender, RoutedEventArgs e)
@@ -185,6 +183,24 @@ namespace Filterizer2.Windows
 
         private void OpenAdvancedTagger()
         {
+	        // var result = MediaMessageBox.Show(
+		       //  "Is this a single or a compilation media? A media should be single if there is one scene where no characters enter or leave, and the action does not change significantly. This is used to track if tags should be mutually exclusive; for example normally marking a media as 'solo' would hide all sex-related tags. But if your media has somebody masturbating alone and somebody enters, it is possible to have both 'solo' and 'sex' in one media.",
+		       //  _mediaFilePath,
+		       //  "Single or Compilation?",
+		       //  MediaMessageBox.MediaMessageBoxButton.SingleCompilation);
+	        //
+	        // bool isSingle;
+	        // if (result == MediaMessageBox.MediaMessageBoxResult.Yes)
+	        // {
+		       //  //It is a single
+		       //  isSingle = true;
+	        // }
+	        // else
+	        // {
+		       //  //It is a compilation
+		       //  isSingle = false;
+	        // }
+	        
 	        MediaTaggingHelperWindow mediaTaggerWindow = new MediaTaggingHelperWindow(_mediaFilePath);
 	        mediaTaggerWindow.SetStartingTagList(ref _currentTags);
 	        MediaPlayer.PausePlayer();
@@ -213,6 +229,7 @@ namespace Filterizer2.Windows
 	        MediaPlayer.PausePlayer();
 	        tagHierarchyWindow.ShowDialog();
         }
+
     }
         
     public class BindingProxy : Freezable

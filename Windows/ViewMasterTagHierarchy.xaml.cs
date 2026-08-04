@@ -95,7 +95,7 @@ namespace Filterizer2.Windows
 			{
 				if (tagItem.MayBeTrueChild(allTags))
 				{
-					return;
+					continue;
 				}
 				HierarchyViewPiece parentPiece = lastUsedHierarchyLevel.Find(item =>
 					item is HierarchyViewCategory catItem && catItem.Category == tagItem.Category) ?? throw new InvalidOperationException("Tag has nonexistent category.");
