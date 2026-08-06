@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -12,6 +13,7 @@ using Brushes = System.Windows.Media.Brushes;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using ListBox = System.Windows.Controls.ListBox;
 using MessageBox = System.Windows.MessageBox;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace Filterizer2.Windows
 {
@@ -141,6 +143,8 @@ namespace Filterizer2.Windows
 						{
 							throw new Exception("Opened media tagging helper without list of tags to write to or action to execute.");
 						}
+
+						DialogResult = true;
 						Close();
 						return;
 					}
@@ -936,18 +940,72 @@ namespace Filterizer2.Windows
 					_helpWindow.Show();
 			}
 		}
+		
+		[GeneratedRegex("[@$\"\\s>!]")]
+		private static partial Regex ForbiddenSearchChars();
+		
+		private void SearchBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+		{
+			e.Handled = ForbiddenSearchChars().IsMatch(e.Text);
+		}
+
+		private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+		{
+			var textBox = sender as TextBox;
+			if (textBox == null) return;
+
+			if (e.Key == Key.Space)
+			{
+				int caretIndex = textBox.CaretIndex;
+				textBox.Text = textBox.Text.Remove(textBox.SelectionStart, textBox.SelectionLength)
+					.Insert(caretIndex, "_");
+				textBox.CaretIndex = caretIndex + 1;
+				e.Handled = true;
+			}
+		}
+
+		private void SearchBox_Pasting(object sender, DataObjectPastingEventArgs e)
+		{
+			if (sender is not TextBox textBox) return;
+
+			if (e.DataObject.GetDataPresent(typeof(string)))
+			{
+				string pastedText = (string)e.DataObject.GetData(typeof(string));
+
+				pastedText = pastedText.Replace(" ", "_");
+		        
+
+				string cleanedText = ForbiddenSearchChars().Replace(pastedText, string.Empty);
+
+				int selectionStart = textBox.SelectionStart;
+				int selectionLength = textBox.SelectionLength;
+
+				string currentText = textBox.Text;
+				string newText = currentText.Remove(selectionStart, selectionLength)
+					.Insert(selectionStart, cleanedText);
+
+				textBox.Text = newText;
+
+				textBox.SelectionStart = selectionStart + cleanedText.Length;
+			}
+	        
+			e.CancelCommand();
+		}
 
 		private void Window_Closing(object? sender, CancelEventArgs e)
 		{
-			MessageBoxResult result = MessageBox.Show(
-				"Are you sure you want to close the tagging window without saving?", 
-				"Confirm Exit", 
-				MessageBoxButton.YesNo, 
-				MessageBoxImage.Question);
-
-			if (result == MessageBoxResult.No)
+			if (DialogResult != true)
 			{
-				e.Cancel = true;
+				MessageBoxResult result = MessageBox.Show(
+					"Are you sure you want to close the tagging window without saving?", 
+					"Confirm Exit", 
+					MessageBoxButton.YesNo, 
+					MessageBoxImage.Question);
+
+				if (result == MessageBoxResult.No)
+				{
+					e.Cancel = true;
+				}
 			}
 		}
 

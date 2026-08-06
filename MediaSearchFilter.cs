@@ -62,7 +62,7 @@ namespace Filterizer2
             {
                 if (Tags.Count == 0)
                 {
-                    return "Empty filter. Click this filter and then click the \"->\" button to add a tag to it.";
+                    return "Empty filter. Click this filter and then double-click a tag from the left to add it.";
                 }
 
                 StringBuilder reportBuilder = new StringBuilder();
@@ -71,11 +71,12 @@ namespace Filterizer2
                 {
 	                if (first)
 	                {
+		                if (Inverted) reportBuilder.Append('-');
 		                reportBuilder.Append(tagItem.Name);
 	                }
 	                else
 	                {
-		                reportBuilder.AppendLine().Append($"   || {tagItem.Name}");
+		                reportBuilder.AppendLine().Append($"   || {(Inverted ? '-' : "")}{tagItem.Name}");
 	                }
 	                first = false;
                 }

@@ -135,8 +135,16 @@ namespace Filterizer2
                         PRIMARY KEY (AlbumId, MediaId),
                         FOREIGN KEY (AlbumId) REFERENCES Album(Id) ON DELETE CASCADE,
                         FOREIGN KEY (MediaId) REFERENCES Media(Id) ON DELETE CASCADE
-                    );"
-                     })
+                    );", @"
+                         CREATE INDEX IF NOT EXISTS IX_Implications_ParentTagId
+                         ON Implications(ParentTagId);
+                    ;", @"
+                         CREATE INDEX IF NOT EXISTS IX_TagAliases_TagId
+                         ON TagAliases(TagId);
+                    ;", @"
+                         CREATE INDEX IF NOT EXISTS IX_Implications_TagId
+                         ON Implications(TagId);
+                    ;"})
             {
                 using var command = new SQLiteCommand(createTableQuery, connection);
                 command.ExecuteNonQuery();
