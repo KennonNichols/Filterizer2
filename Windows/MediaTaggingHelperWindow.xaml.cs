@@ -97,7 +97,7 @@ namespace Filterizer2.Windows
 			originalWindowTags = tagItems;
 		}
 		
-		private void MoveToNextSubcategory()
+		private void MoveToNextSubcategory(bool reverse = false)
 		{
 			if (_queueTags.Count > 0)
 			{
@@ -110,70 +110,124 @@ namespace Filterizer2.Windows
 					}
 				}
 				_queueTags.Clear();
-				_suppressCollectionChanged = false;
-				ForceCollectionChangedHandler();
 			}
 
-			_subcategoryIndex++;
-			if (_subcategoryIndex >= _currentCategory.SubcategoriesInOrder.Count)
+			if (reverse)
 			{
-				_categoryIndex++;
-				if (_categoryIndex >= Tags.TagCategoriesInTaggingOrder.Count)
+				_subcategoryIndex--;
+				if (_subcategoryIndex < 0)
 				{
-					if (MessageBox.Show(
-						    "You have reached the end of tagging flow. Are you finished?",
-						    "Confirm tags?",
-						    MessageBoxButton.YesNo,
-						    MessageBoxImage.Question
-					    ) == MessageBoxResult.Yes)
+					_categoryIndex--;
+					if (_categoryIndex < 0)
 					{
-						if (originalWindowTags != null)
-						{
-							originalWindowTags.Clear();
-							foreach (TagItem masterTag in _masterTags)
-							{
-								originalWindowTags.Add(masterTag);
-							}
-						}
-						else if (_onTagSelectComplete != null)
-						{
-							_onTagSelectComplete.Invoke(_masterTags.ToList());
-						}
-						else
-						{
-							throw new Exception("Opened media tagging helper without list of tags to write to or action to execute.");
-						}
-
-						DialogResult = true;
-						Close();
+						_subcategoryIndex = 0;
+						_categoryIndex = 0;
 						return;
 					}
 					else
 					{
-						Reset();
+						_currentCategory = Tags.TagCategoriesInTaggingOrder[_categoryIndex];
+						_subcategoryIndex = _currentCategory.SubcategoriesInOrder.Count - 1;
+						_currentSubCategory = _currentCategory.SubcategoriesInOrder[_subcategoryIndex];
 					}
 				}
 				else
 				{
-					_currentCategory = Tags.TagCategoriesInTaggingOrder[_categoryIndex];
-					_subcategoryIndex = 0;
-					_currentSubCategory = _currentCategory.SubcategoriesInOrder[0];
+					_currentSubCategory = _currentCategory.SubcategoriesInOrder[_subcategoryIndex];
 				}
 			}
 			else
 			{
-				_currentSubCategory = _currentCategory.SubcategoriesInOrder[_subcategoryIndex];
+				_subcategoryIndex++;
+				if (_subcategoryIndex >= _currentCategory.SubcategoriesInOrder.Count)
+				{
+					_categoryIndex++;
+					if (_categoryIndex >= Tags.TagCategoriesInTaggingOrder.Count)
+					{
+						if (MessageBox.Show(
+							    "You have reached the end of tagging flow. Are you finished?",
+							    "Confirm tags?",
+							    MessageBoxButton.YesNo,
+							    MessageBoxImage.Question
+						    ) == MessageBoxResult.Yes)
+						{
+							if (originalWindowTags != null)
+							{
+								originalWindowTags.Clear();
+								foreach (TagItem masterTag in _masterTags)
+								{
+									originalWindowTags.Add(masterTag);
+								}
+							}
+							else if (_onTagSelectComplete != null)
+							{
+								_onTagSelectComplete.Invoke(_masterTags.ToList());
+							}
+							else
+							{
+								throw new Exception("Opened media tagging helper without list of tags to write to or action to execute.");
+							}
+
+							DialogResult = true;
+							Close();
+							return;
+						}
+						else
+						{
+							Reset();
+						}
+					}
+					else
+					{
+						_currentCategory = Tags.TagCategoriesInTaggingOrder[_categoryIndex];
+						_subcategoryIndex = 0;
+						_currentSubCategory = _currentCategory.SubcategoriesInOrder[0];
+					}
+				}
+				else
+				{
+					_currentSubCategory = _currentCategory.SubcategoriesInOrder[_subcategoryIndex];
+				}
+			}
+
+			ReverseSubcategoryButton.IsEnabled = _subcategoryIndex != 0 || _categoryIndex != 0;
+
+			if (reverse)
+			{
+				//Move all of this category from master to queue
+				_suppressCollectionChanged = true;
+				HashSet<TagItem> tagsToClear = new HashSet<TagItem>();
+				foreach (TagItem masterTag in _masterTags)
+				{
+					if (Equals(masterTag.SubCategory, _currentSubCategory))
+					{
+						_queueTags.Add(new TagDisplayChildingItem(masterTag, false));
+						tagsToClear.Add(masterTag);
+					}
+				}
+				foreach (TagItem tag in tagsToClear)
+				{
+					_masterTags.Remove(tag);
+				}
+			}
+
+			if (_suppressCollectionChanged)
+			{
+				_suppressCollectionChanged = false;
+				ForceCollectionChangedHandler();
 			}
 
 			if (!TagRepository.CheckAnyTagsOfSubcategoryExist(_currentSubCategory))
 			{
 				//If there are no tags in this subcat, we skip it
-				MoveToNextSubcategory();
+				MoveToNextSubcategory(reverse);
 				return;
 			}
 			
-			//Remove parent cache, since those tags will most likely never be looked at again
+			//Remove parent and excluder caches, since those tags will most likely never be looked at again
 			_tagChildrenCache.Clear();
+			_allExcludersCache.Clear();
+			
 			SearchTextBox.Text = "";
 			UpdateContentForCurrentCategories();
 			
@@ -316,6 +370,25 @@ namespace Filterizer2.Windows
 			MediaPlayer.Dispose();
 		}
 
+		private Dictionary<int, HashSet<int>> _allExcludersCache = new Dictionary<int, HashSet<int>>();
+		private HashSet<int> GetExcluders(TagItem tag)
+		{
+			if (_allExcludersCache.TryGetValue(tag.Id, out HashSet<int>? set))
+			{
+				return set;
+			}
+
+			HashSet<int> setIds = new HashSet<int>();
+			foreach (int i in tag.GetAllExcludingIDsRecursively())
+			{
+				setIds.Add(i);
+			}
+
+			_allExcludersCache[tag.Id] = setIds;
+			return setIds;
+		}
+		
+		
 		private string _previousSearch;
 		private void RefreshSearchResults()
 		{
@@ -338,7 +411,7 @@ namespace Filterizer2.Windows
 			//Filter all tags that are excluded by our current tags if in single mode
 			if (IsSingle)
 			{
-				tags = tags.Where(item => !item.ExcludedByIDs.Any(id => GetCurrentAllTagFullCollectionIdsCache().Contains(id)));
+				tags = tags.Where(item => !GetExcluders(item).Any(id => GetCurrentAllTagFullCollectionIdsCache().Contains(id)));
 			}
 			
 			TagItem? rememberedItem;
@@ -534,6 +607,52 @@ namespace Filterizer2.Windows
 		private void ConfirmSubcategoryButton_Click(object sender, RoutedEventArgs e)
 		{
 			MoveToNextSubcategory();
+		}
+		private void ReverseSubcategoryButton_Click(object sender, RoutedEventArgs e)
+		{
+			MoveToNextSubcategory(true);
+		}
+		private void FinishEarlyButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (MessageBox.Show(
+				    "Are you are finished?",
+				    "Confirm tags?",
+				    MessageBoxButton.YesNo,
+				    MessageBoxImage.Question
+			    ) == MessageBoxResult.Yes)
+			{
+				if (_queueTags.Count > 0)
+				{
+					_suppressCollectionChanged = true;
+					foreach (TagDisplayChildingItem queueTag in _queueTags)
+					{
+						if (!queueTag.IsImplied)
+						{
+							_masterTags.Add(queueTag.Tag);
+						}
+					}
+				}
+				
+				if (originalWindowTags != null)
+				{
+					originalWindowTags.Clear();
+					foreach (TagItem masterTag in _masterTags)
+					{
+						originalWindowTags.Add(masterTag);
+					}
+				}
+				else if (_onTagSelectComplete != null)
+				{
+					_onTagSelectComplete.Invoke(_masterTags.ToList());
+				}
+				else
+				{
+					throw new Exception("Opened media tagging helper without list of tags to write to or action to execute.");
+				}
+
+				DialogResult = true;
+				Close();
+			}
 		}
 
 		private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -732,7 +851,7 @@ namespace Filterizer2.Windows
 				foreach (TagItem childTag in TagRepository.GetAllTagsChildOf(parentTagItem.Tag.Id, blacklist))
 				{
 					//Filter all tags that are excluded by our current tags if in single mode
-					if (IsSingle && childTag.ExcludedByIDs.Any(id => GetCurrentAllTagFullCollectionIdsCache().Contains(id)))
+					if (IsSingle && GetExcluders(childTag).Any(id => GetCurrentAllTagFullCollectionIdsCache().Contains(id)))
 					{
 						continue;
 					}

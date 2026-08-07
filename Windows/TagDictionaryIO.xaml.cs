@@ -286,7 +286,7 @@ namespace Filterizer2.Windows
 				
 				foreach (TagItem excluder in relatedTransientTags[tagItem].TransientExcluders)
 				{
-					tagItem.ExcludedByIDs.Add(excluder.Id);
+					tagItem.ImmediateExcludedByIDs.Add(excluder.Id);
 				}
 				
 				//This only works because every tag either had their parental relationships destroyed in the last loop, or never had parents to begin with

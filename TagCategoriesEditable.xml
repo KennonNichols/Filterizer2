@@ -42,14 +42,6 @@
                 <Description>Tag any genitalia, including tentacles.</Description>
             </li>
             <li>
-                <Tag>Focuses_And_Views</Tag>
-                <Description>Tag any special cutaway views, positions, and focuses on specific body parts.</Description>
-            </li>
-            <li>
-                <Tag>Character_Distributions</Tag>
-                <Description>Tag counts or distributions of characters.</Description>
-            </li>
-            <li>
                 <Tag>Emotions</Tag>
                 <Description>Tag the emotions of each partner.</Description>
             </li>
@@ -130,16 +122,24 @@
         <Color>231, 212, 128</Color>
         <SubCategories>
             <li>
-                <Tag>Perspective</Tag>
-                <Description>Tag any camera angles and the point of view.</Description>
-            </li>
-            <li>
                 <Tag>Media_Format</Tag>
                 <Description>Tag what type of layout or structure the content has.</Description>
             </li>
             <li>
                 <Tag>Audio</Tag>
                 <Description>Tag all audible features.</Description>
+            </li>
+            <li>
+                <Tag>Perspective</Tag>
+                <Description>Tag any camera angles and the point of view.</Description>
+            </li>
+            <li>
+                <Tag>Focuses_And_Views</Tag>
+                <Description>Tag any special cutaway views, positions, and focuses on specific body parts.</Description>
+            </li>
+            <li>
+                <Tag>Character_Distributions</Tag>
+                <Description>Tag counts or distributions of characters.</Description>
             </li>
         </SubCategories>
         <Order>0</Order>

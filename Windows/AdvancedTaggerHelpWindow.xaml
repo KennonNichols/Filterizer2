@@ -1,0 +1,337 @@
+<Window x:Class="Filterizer2.Windows.AdvancedTaggerHelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:Filterizer2.Windows"
+        mc:Ignorable="d"
+        Title="Advanced Tagging Shortcuts"
+        Width="853"
+        Height="648"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        ShowInTaskbar="False">
+    <Window.Resources>
+        <Style x:Key="KeyCap"
+               TargetType="Border">
+
+            <Setter Property="BorderBrush"
+                    Value="#909090"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="CornerRadius"
+                    Value="4"/>
+
+            <Setter Property="Padding"
+                    Value="8,4"/>
+
+            <Setter Property="Margin"
+                    Value="2"/>
+
+            <Setter Property="Background"
+                    Value="#F7F7F7"/>
+
+        </Style>
+
+    </Window.Resources>
+    
+    <Grid Margin="10">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ========================= -->
+        <!-- Search Results -->
+        <!-- ========================= -->
+
+        <Border
+                  BorderBrush="#D0D0D0"
+                  BorderThickness="1"
+                  CornerRadius="8"
+                  Padding="8"
+                  Margin="0,0,8,0">
+
+            <StackPanel Margin="10">
+
+                <TextBlock FontWeight="Bold"
+                           Margin="0,0,0,10"
+                           FontSize="16">
+                    Search Results
+                </TextBlock>
+
+                <Grid Margin="0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Margin="8,0,0,0"
+                               VerticalAlignment="Center">
+                        Add selected tag to Queue
+                    </TextBlock>
+                    <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                        <TextBlock Text="→"/>
+                    </Border>
+                </Grid>
+
+                <Grid Margin="0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Margin="8,0,0,0"
+                               VerticalAlignment="Center">
+                        Move focus to Queue
+                    </TextBlock>
+                    
+                    <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                        <TextBlock Text="Ctrl"/>
+                    </Border>
+
+                    <TextBlock Grid.Column="2" Margin="4">+</TextBlock>
+
+                    <Border Grid.Column="3" Style="{StaticResource KeyCap}">
+                        <TextBlock Text="→"/>
+                    </Border>
+                </Grid>
+
+            </StackPanel>
+
+        </Border>
+
+        <!-- ========================= -->
+        <!-- Right Side -->
+        <!-- ========================= -->
+
+        <Grid Grid.Column="1">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Queue -->
+
+            <Border 
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="8"
+                Margin="0,0,0,8">
+
+                
+                
+                <StackPanel Margin="10">
+                    <TextBlock FontWeight="Bold"
+                               Margin="0,0,0,10"
+                               FontSize="16">
+                        Queue
+                    </TextBlock>
+                    
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                            Remove selected tag
+                        </TextBlock>
+                        
+                        <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="←"/>
+                        </Border>
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                            Focus Search Results
+                        </TextBlock>
+                        
+                        <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="Ctrl"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="2" Margin="4">+</TextBlock>
+
+                        <Border Grid.Column="3" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="←"/>
+                        </Border>
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                            Focus Child Box
+                        </TextBlock>
+                        
+                        <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="Ctrl"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="2" Margin="4">+</TextBlock>
+
+                        <Border Grid.Column="3" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="→"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="4" Margin="4">or</TextBlock>
+
+                        <Border Grid.Column="5" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="↓"/>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+
+            </Border>
+
+            <!-- Child Box -->
+
+            <Border Grid.Row="1" 
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="8"
+                Margin="0,0,0,8">
+
+                <StackPanel Margin="10">
+                    <TextBlock FontWeight="Bold"
+                               Margin="0,0,0,10"
+                               FontSize="16">
+                        Child Box
+                    </TextBlock>
+
+                    <Grid Margin="0, 4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                            Move selected child to Queue
+                        </TextBlock>
+                        
+                        <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="→"/>
+                        </Border>
+                    </Grid>
+                    <Grid Margin="0, 4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                            Focus Queue
+                        </TextBlock>
+                        
+                        <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="Ctrl"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="2" Margin="4">+</TextBlock>
+
+                        <Border Grid.Column="3" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="↑"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="4" Margin="4">or</TextBlock>
+
+                        <Border Grid.Column="5" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="→"/>
+                        </Border>
+                    </Grid>
+                    <Grid Margin="0, 4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                            Focus Search Results
+                        </TextBlock>
+                        
+                        <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="Ctrl"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="2" Margin="4">+</TextBlock>
+
+                        <Border Grid.Column="3" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="←"/>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+
+            </Border>
+
+            <!-- Notes -->
+
+            <Border
+                    BorderBrush="#D0D0D0"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="8"
+                    Margin="0,0,0, 0"
+                      Grid.Row="2">
+                <StackPanel Orientation="Vertical">
+                    
+                    <Grid Margin="0, 4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                            Move to next category
+                        </TextBlock>
+                        
+                        <Border Grid.Column="1" Style="{StaticResource KeyCap}">
+                            <TextBlock Text="Enter"/>
+                        </Border>
+                    </Grid>
+                    <TextBlock x:Name="TipsTextBlock"
+                               Margin="10"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Top" LineHeight="25">
+                        -Scroll through search results or type to find tags
+                            <LineBreak/>
+                            -Move them to the queue; they save when going to the next category
+                            <LineBreak/>
+                            -The child box has children of the selected queue tag
+                            <LineBreak/>
+                            -Check "Is Single" if you want to hide mutually exclusive tags
+                            <LineBreak/>
+                            -After reaching the end you may confirm or restart from the top&#x0a;
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+        </Grid>
+    </Grid>
+</Window>

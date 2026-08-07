@@ -99,9 +99,7 @@ namespace Filterizer2
 	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
 	        var command = connection.CreateCommand();
 
-	        // string nonChildableCats = "'" + string.Join("','", Tags.NonChildableCats) + "'";
-
-	        // SQL to search for all parent IDs
+	        //SQL to search for all parent IDs
 	        command.CommandText = """
 	                                	WITH RECURSIVE ParentTags AS
 	                                     (
@@ -136,6 +134,54 @@ namespace Filterizer2
 		        yield return reader.GetInt32(0);
 	        }
         }
+
+        public static IEnumerable<int> GetAllExcludingIDsRecursively(int id)
+        {
+	        
+	        using var connection = ManagementHelpers.GetAndOpenDatabaseConnection();
+	        var command = connection.CreateCommand();
+
+	        //SQL to search for all parent IDs
+	        command.CommandText = """
+	                                      WITH RECURSIVE ParentTags AS
+	                                      (
+	                              	        --Get the tag we have
+	                                      SELECT
+	                              	        @TagId AS TagId
+	                              
+	                                      UNION
+	                              
+	                              	        --Its direct parents
+	                                      SELECT
+	                                      i.ParentTagId
+	                              	        FROM Implications i
+	                                      WHERE i.TagId = @TagId
+	                              
+	                                      UNION
+	                              
+	                              	        --Its recursive parents
+	                                      SELECT
+	                                      i.ParentTagId
+	                              	        FROM ParentTags p
+	                                      JOIN Implications i
+	                              	        ON p.TagId = i.TagId
+	                              	        )
+	                              
+	                                      SELECT DISTINCT e.ExcludingTagId
+	                              	        FROM ExcludedByRelations e
+	                                      JOIN ParentTags p
+	                              	        ON e.TagId = p.TagId
+	                                      ORDER BY e.ExcludingTagId;
+	                              """;
+	        command.Parameters.AddWithValue("@TagId", id);
+	        
+	        using var reader = command.ExecuteReader();
+	        while (reader.Read())
+	        {
+		        yield return reader.GetInt32(0);
+	        }
+        }
+        
         public static IEnumerable<TagItem> GetAllTagsChildOf(int id, HashSet<int> blacklist)
         {
 	        foreach (int childId in GetAllTagIdsChildOf(id, blacklist))
@@ -394,7 +440,7 @@ namespace Filterizer2
 	        }
             
 	        // Insert the excluders
-	        foreach (var excludingTagId in tag.ExcludedByIDs)
+	        foreach (var excludingTagId in tag.ImmediateExcludedByIDs)
 	        {
 		        var aliasCommand = connection.CreateCommand();
 		        aliasCommand.CommandText = "INSERT INTO ExcludedByRelations (TagId, ParentTagId) VALUES (@tagId, @excludingTagId);";
@@ -458,7 +504,7 @@ namespace Filterizer2
 		        {
 			        while (excluderReader.Read())
 			        {
-				        tag.ExcludedByIDs.Add(excluderReader.GetInt32(0));
+				        tag.ImmediateExcludedByIDs.Add(excluderReader.GetInt32(0));
 			        }
 		        }
 
@@ -575,7 +621,7 @@ namespace Filterizer2
 	        {
 		        insertExcluderCommand.Parameters.AddWithValue("@TagId", tag.Id);
                 
-		        foreach (int excludedById in tag.ExcludedByIDs)
+		        foreach (int excludedById in tag.ImmediateExcludedByIDs)
 		        {
 			        insertExcluderCommand.Parameters.AddWithValue("@ExcludingTagId", excludedById);
 			        insertExcluderCommand.ExecuteNonQuery();

@@ -75,7 +75,7 @@ namespace Filterizer2.Windows
             }
             
             //Excluders
-            foreach (var tagItemExcluder in tagItem.ExcludedByTags)
+            foreach (var tagItemExcluder in tagItem.ImmediateExcludedByTags)
             {
 	            ExclusionsListBox.Items.Add(tagItemExcluder);
 	            ExcluderIds.Add(tagItemExcluder.Id);
@@ -152,7 +152,7 @@ namespace Filterizer2.Windows
                 _editingTag.SubCategory = selectedTagSubtype;
                 _editingTag.Aliases = Aliases;
                 _editingTag.ImmediateParentIDs = ParentIds;
-                _editingTag.ExcludedByIDs = ExcluderIds;
+                _editingTag.ImmediateExcludedByIDs = ExcluderIds;
                 
                 TagRepository.UpdateTag(_editingTag);
             }
@@ -166,7 +166,7 @@ namespace Filterizer2.Windows
                     Description = tagDescription,
                     Aliases = Aliases,
                     ImmediateParentIDs = ParentIds,
-                    ExcludedByIDs = ExcluderIds
+                    ImmediateExcludedByIDs = ExcluderIds
                 };
 
                 TagRepository.AddTag(newTag);
@@ -245,7 +245,7 @@ namespace Filterizer2.Windows
 	        }
         }
 
-        public List<TagItem> GetExcluders => _editingTag?.ExcludedByTags.ToList() ??
+        public List<TagItem> GetExcluders => _editingTag?.ImmediateExcludedByTags.ToList() ??
                                            ExclusionsListBox.Items.SourceCollection.Cast<TagItem>().ToList();
         
         private void EditExclusions_Click(object sender, RoutedEventArgs e)

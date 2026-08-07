@@ -21,7 +21,7 @@ namespace Filterizer2
         /// Temporary list of IDs. Before all tags are loaded, we populate this field, then find parent tags later so all tags are loaded successfully
         /// </summary>
         public List<int> ImmediateParentIDs { get; set; } = new List<int>();
-        public List<int> ExcludedByIDs { get; set; } = new List<int>();
+        public List<int> ImmediateExcludedByIDs { get; set; } = new List<int>();
         
         public bool IsChildable => Category?.IsChildable ?? true;
 
@@ -77,12 +77,12 @@ namespace Filterizer2
 	        }
         }
         
-        public IEnumerable<TagItem> ExcludedByTags
+        public IEnumerable<TagItem> ImmediateExcludedByTags
         {
 	        get
 	        {
 		        List<int>? vanishedInts = null;
-		        foreach (var parentId in ExcludedByIDs)
+		        foreach (var parentId in ImmediateExcludedByIDs)
 		        {
 			        if (TagRepository.TryGetTagById(parentId, out TagItem foundTag))
 			        {
@@ -100,7 +100,7 @@ namespace Filterizer2
 		        {
 			        foreach (int vanishedInt in vanishedInts)
 			        {
-				        ExcludedByIDs.Remove(vanishedInt);
+				        ImmediateExcludedByIDs.Remove(vanishedInt);
 			        }
 
 			        TagRepository.UpdateTag(this, TagUpdateMode.UpdateExclusions);
@@ -139,27 +139,15 @@ namespace Filterizer2
         
         
 
-        // private HashSet<int>? _allParentIds;
-        //
-        // public IEnumerable<int> GetAllParentIdsRecursive()
-        // {
-	       //  return _allParentIds ??=
-		      //   ComputeAllParentIdsRecursive().ToHashSet();
-        // }
         //TODO consider optimizing this in a way that it doesn't cache dead parental relationships
         public IEnumerable<int> GetAllParentIdsRecursive()
         {
-	        // HashSet<TagItem> tagItems = new ();
-	        // GetTagHierarchyTags(ref tagItems);
-	        //
-	        // HashSet<int> tagIds = new ();
-	        // foreach (TagItem parentTag in tagItems)
-	        // {
-		       //  tagIds.Add(parentTag.Id);
-	        // }
-	        //
-	        // return tagIds;
 	        return TagRepository.GetAllParentIDsRecursively(Id);
+        }
+
+        public IEnumerable<int> GetAllExcludingIDsRecursively()
+        {
+	        return TagRepository.GetAllExcludingIDsRecursively(Id);
         }
         
         public string NamesAndAliasesAsString =>
@@ -204,9 +192,9 @@ namespace Filterizer2
 		        }
 	        }
 	        
-	        if (ExcludedByIDs.Count > 0)
+	        if (ImmediateExcludedByIDs.Count > 0)
 	        {
-		        foreach (TagItem tagItem in ExcludedByTags)
+		        foreach (TagItem tagItem in ImmediateExcludedByTags)
 		        {
 			        builder.Append(" !" + tagItem.Name);
 		        }
