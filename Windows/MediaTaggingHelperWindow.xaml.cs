@@ -4,10 +4,7 @@ using System.ComponentModel;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Threading;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -19,9 +16,9 @@ namespace Filterizer2.Windows
 {
 	public partial class MediaTaggingHelperWindow
 	{
-		private List<TagItem> _preexistingTags = new List<TagItem>();
-		private int _categoryIndex = 0;
-		private int _subcategoryIndex = 0;
+		private readonly List<TagItem> _preexistingTags = new List<TagItem>();
+		private int _categoryIndex;
+		private int _subcategoryIndex;
 
 		public bool IsSingle
 		{
@@ -34,28 +31,31 @@ namespace Filterizer2.Windows
 			}
 		}
 
-		private TagCategory? _currentCategory;
-		private TagSubCategory? _currentSubCategory;
+		private TagCategory _currentCategory;
+		private TagSubCategory _currentSubCategory;
+
+		public ObservableCollection<TagItem> MasterTags { get; } = new();
+		public ObservableCollection<TagDisplayChildingItem> QueueTags { get; } = new();
+		public ObservableCollection<TagDisplayChildingItem> SearchResults { get; } = new();
+		public ObservableCollection<TagDisplayChildingItem> ChildOfQueue { get; } = new();
+
+		private readonly Dictionary<string, HashSet<int>> _tagChildrenCache = new Dictionary<string, HashSet<int>>();
+
+		private readonly Action<List<TagItem>> _onTagSelectComplete;
 		
-		private readonly ObservableCollection<TagItem> _masterTags = new();
-		private readonly ObservableCollection<TagDisplayChildingItem> _queueTags = new();
-		private readonly ObservableCollection<TagDisplayChildingItem> _searchResults = new();
-		private readonly ObservableCollection<TagDisplayChildingItem> _childOfQueue = new();
-
-		public ObservableCollection<TagItem> MasterTags => _masterTags;
-		public ObservableCollection<TagDisplayChildingItem> QueueTags => _queueTags;
-		public ObservableCollection<TagDisplayChildingItem> SearchResults => _searchResults;
-		public ObservableCollection<TagDisplayChildingItem> ChildOfQueue => _childOfQueue;
-
-		private Dictionary<string, HashSet<int>> _tagChildrenCache = new Dictionary<string, HashSet<int>>();
-
-		private Action<List<TagItem>>? _onTagSelectComplete;
-		
-		public MediaTaggingHelperWindow(string? mediaFilePath, Action<List<TagItem>>? onTagSelectComplete = null)
+		public MediaTaggingHelperWindow(string? mediaFilePath, Action<List<TagItem>> onTagSelectComplete, IEnumerable<TagItem>? startingTags = null)
 		{
 			InitializeComponent();
 
 			DataContext = this;
+
+			if (startingTags != null)
+			{
+				foreach (TagItem startingTag in startingTags)
+				{
+					_preexistingTags.Add(startingTag);
+				}
+			}
 			
 			_currentCategory = Tags.TagCategoriesInTaggingOrder[0];
 			_currentSubCategory = _currentCategory.SubcategoriesInOrder[0];
@@ -64,8 +64,8 @@ namespace Filterizer2.Windows
 
 			SearchListBox.ItemContainerGenerator.StatusChanged += OnItemContainerGeneratorOnStatusChanged;
 			
-			_masterTags.CollectionChanged += MasterTags_CollectionChanged;
-			_queueTags.CollectionChanged += Queue_CollectionChanged;
+			MasterTags.CollectionChanged += MasterTags_CollectionChanged;
+			QueueTags.CollectionChanged += Queue_CollectionChanged;
 			_onTagSelectComplete = onTagSelectComplete;
 
 			if (mediaFilePath != null)
@@ -74,7 +74,8 @@ namespace Filterizer2.Windows
 			}
 
 			return;
-
+			
+			//This will focus the search list box as soon as it generates it's containers
 			void OnItemContainerGeneratorOnStatusChanged(object? sender, EventArgs e)
 			{
 				if (SearchListBox.ItemContainerGenerator.Status == System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
@@ -84,32 +85,20 @@ namespace Filterizer2.Windows
 				}
 			}
 		}
-
-		private ObservableCollection<TagItem>? originalWindowTags = null;
-
-		public void SetStartingTagList(ref ObservableCollection<TagItem> tagItems)
-		{
-			foreach (TagItem tagItem in tagItems)
-			{
-				_preexistingTags.Add(tagItem);
-			}
-
-			originalWindowTags = tagItems;
-		}
 		
 		private void MoveToNextSubcategory(bool reverse = false)
 		{
-			if (_queueTags.Count > 0)
+			if (QueueTags.Count > 0)
 			{
 				_suppressCollectionChanged = true;
-				foreach (TagDisplayChildingItem queueTag in _queueTags)
+				foreach (TagDisplayChildingItem queueTag in QueueTags)
 				{
 					if (!queueTag.IsImplied)
 					{
-						_masterTags.Add(queueTag.Tag);
+						MasterTags.Add(queueTag.Tag);
 					}
 				}
-				_queueTags.Clear();
+				QueueTags.Clear();
 			}
 
 			if (reverse)
@@ -151,22 +140,7 @@ namespace Filterizer2.Windows
 							    MessageBoxImage.Question
 						    ) == MessageBoxResult.Yes)
 						{
-							if (originalWindowTags != null)
-							{
-								originalWindowTags.Clear();
-								foreach (TagItem masterTag in _masterTags)
-								{
-									originalWindowTags.Add(masterTag);
-								}
-							}
-							else if (_onTagSelectComplete != null)
-							{
-								_onTagSelectComplete.Invoke(_masterTags.ToList());
-							}
-							else
-							{
-								throw new Exception("Opened media tagging helper without list of tags to write to or action to execute.");
-							}
+							ApplyTags();
 
 							DialogResult = true;
 							Close();
@@ -197,17 +171,17 @@ namespace Filterizer2.Windows
 				//Move all of this category from master to queue
 				_suppressCollectionChanged = true;
 				HashSet<TagItem> tagsToClear = new HashSet<TagItem>();
-				foreach (TagItem masterTag in _masterTags)
+				foreach (TagItem masterTag in MasterTags)
 				{
 					if (Equals(masterTag.SubCategory, _currentSubCategory))
 					{
-						_queueTags.Add(new TagDisplayChildingItem(masterTag, false));
+						QueueTags.Add(new TagDisplayChildingItem(masterTag, false));
 						tagsToClear.Add(masterTag);
 					}
 				}
 				foreach (TagItem tag in tagsToClear)
 				{
-					_masterTags.Remove(tag);
+					MasterTags.Remove(tag);
 				}
 			}
 
@@ -236,13 +210,44 @@ namespace Filterizer2.Windows
 			MoveFocusToListBoxWithDefault(SearchListBox);
 		}
 
+		private void ApplyTags()
+		{
+			_suppressCollectionChanged = true;
+			
+			if (QueueTags.Count > 0)
+			{
+				foreach (TagDisplayChildingItem queueTag in QueueTags)
+				{
+					if (!queueTag.IsImplied)
+					{
+						MasterTags.Add(queueTag.Tag);
+					}
+				}
+			}
+
+			if (_preexistingTags.Count > 0)
+			{
+				HashSet<int> currentTagIDs = GetCurrentTagCollectionIds();
+				foreach (TagItem preexistingTag in _preexistingTags)
+				{
+					if (!IsTagImplied(preexistingTag, currentTagIDs))
+					{
+						currentTagIDs.Add(preexistingTag.Id);
+						MasterTags.Add(preexistingTag);
+					}
+				}
+			}
+			
+			_onTagSelectComplete.Invoke(MasterTags.ToList());
+		}
+
 		private void Reset()
 		{
-			foreach (TagItem masterTag in _masterTags)
+			foreach (TagItem masterTag in MasterTags)
 			{
 				_preexistingTags.Add(masterTag);
 			}
-			_masterTags.Clear();
+			MasterTags.Clear();
 			_categoryIndex = 0;
 			_subcategoryIndex = 0;
 			_currentCategory = Tags.TagCategoriesInTaggingOrder[0];
@@ -259,27 +264,25 @@ namespace Filterizer2.Windows
 			//Add preexisting tags to the queue where they belong
 			List<TagItem> transferredTags = new List<TagItem>();
 			HashSet<int> currentTagIDs = GetCurrentTagCollectionIds();
-			bool anyFound = false;
 			foreach (TagItem preExistingTag in _preexistingTags )
 			{
 				if (preExistingTag.Name == "Tagging_In_Progress") continue;
 				if (Equals(preExistingTag.SubCategory, _currentSubCategory))
 				{
-					anyFound = true;
 					transferredTags.Add(preExistingTag);
 					//Add that tag to the current list
 					currentTagIDs.Add(preExistingTag.Id);
 				}
 			}
 
-			if (anyFound)
+			if (transferredTags.Count != 0)
 			{
 				//Temporarily suppress collection updating, as we might add a large number of tags and do not need to refresh every time
 				_suppressCollectionChanged = true;
 				foreach (TagItem transferredTag in transferredTags)
 				{
 					_preexistingTags.RemoveAll(t => Equals(t, transferredTag));
-					_queueTags.Add(new TagDisplayChildingItem(transferredTag, IsTagImplied(transferredTag, currentTagIDs)));
+					QueueTags.Add(new TagDisplayChildingItem(transferredTag, IsTagImplied(transferredTag, currentTagIDs)));
 				}
 				_suppressCollectionChanged = false;
 				//Refresh once
@@ -304,8 +307,8 @@ namespace Filterizer2.Windows
 		{
 			return _currentTagCollectionIdsCache ??=
 			[
-				.._masterTags.Select(t => t.Id),
-				.._queueTags.Select(t => t.Tag.Id)
+				..MasterTags.Select(t => t.Id),
+				..QueueTags.Select(t => t.Tag.Id)
 			];
 		}
 		/// <summary>
@@ -317,7 +320,7 @@ namespace Filterizer2.Windows
 			if (_currentMasterTagFullCollectionIdsCache != null) return _currentMasterTagFullCollectionIdsCache;
 			_currentMasterTagFullCollectionIdsCache = new HashSet<int>();
 			
-			foreach (TagItem masterTag in _masterTags)
+			foreach (TagItem masterTag in MasterTags)
 			{
 				_currentMasterTagFullCollectionIdsCache.Add(masterTag.Id);
 				foreach (int id in masterTag.GetAllParentIdsRecursive())
@@ -337,7 +340,7 @@ namespace Filterizer2.Windows
 			if (_currentQueueTagFullCollectionIdsCache != null) return _currentQueueTagFullCollectionIdsCache;
 			_currentQueueTagFullCollectionIdsCache = new HashSet<int>();
 			
-			foreach (TagDisplayChildingItem queueTagDisplay in _queueTags)
+			foreach (TagDisplayChildingItem queueTagDisplay in QueueTags)
 			{
 				TagItem queueTag = queueTagDisplay.Tag;
 				_currentQueueTagFullCollectionIdsCache.Add(queueTag.Id);
@@ -389,13 +392,13 @@ namespace Filterizer2.Windows
 		}
 		
 		
-		private string _previousSearch;
+		private string? _previousSearch;
 		private void RefreshSearchResults()
 		{
 			string search = SearchTextBox.Text.Trim();
 
 			bool shouldRememberPast = true;
-			if (_previousSearch != search || _searchResults.Count == 0)
+			if (_previousSearch != search || SearchResults.Count == 0)
 			{
 				//If the search changed, forget memories
 				_selectionMemories.Remove(SearchListBox);
@@ -421,18 +424,18 @@ namespace Filterizer2.Windows
 			bool isRememberedItemInImplications = false;
 			if (shouldRememberPast)
 			{
-				if (_selectionMemories.TryGetValue(SearchListBox, out SelectionMemory memory))
+				if (_selectionMemories.TryGetValue(SearchListBox, out SelectionMemory? memory))
 				{
 					TagDisplayChildingItem rememberedDisplayItem;
-					if (memory.Index != null)
+					if (memory!.Index != null)
 					{
 						int rememberedIndex = (int)memory.Index;
-						if (rememberedIndex >= _searchResults.Count)
+						if (rememberedIndex >= SearchResults.Count)
 						{
-							rememberedIndex = _searchResults.Count - 1;
+							rememberedIndex = SearchResults.Count - 1;
 						}
 						//Special mode if remembering index when this changes
-						rememberedDisplayItem = _searchResults[rememberedIndex];
+						rememberedDisplayItem = SearchResults[rememberedIndex];
 					}
 					else if (memory.Item != null)
 					{
@@ -449,7 +452,7 @@ namespace Filterizer2.Windows
 					//Iterate until we reach the item we want, and then stop. We will later work backwards from that to go to the previous child that isn't implied
 					//TODO make sure this works; it can skip further up the list if any items are implied or gone
 					int ind = 0;
-					foreach (TagDisplayChildingItem tagDisplayChildingItem in _searchResults)
+					foreach (TagDisplayChildingItem tagDisplayChildingItem in SearchResults)
 					{
 						previousTagItemsAndHasBeenImplied.Add((tagDisplayChildingItem.Tag, null, -1));
 						foundTagIDs.Add(tagDisplayChildingItem.Tag.Id);
@@ -459,7 +462,7 @@ namespace Filterizer2.Windows
 						{
 							break;
 						}
-						if (rememberedItem == tagDisplayChildingItem.Tag)
+						if (Equals(rememberedItem, tagDisplayChildingItem.Tag))
 						{
 							break;
 						}
@@ -471,7 +474,7 @@ namespace Filterizer2.Windows
 				}
 			}
 			
-			_searchResults.Clear();
+			SearchResults.Clear();
 
 			int index = 0;
 			foreach (TagDisplayChildingItem result in tags
@@ -488,7 +491,7 @@ namespace Filterizer2.Windows
 					}
 					index++;
 				}
-				_searchResults.Add(result);
+				SearchResults.Add(result);
 			}
 			
 			
@@ -498,7 +501,7 @@ namespace Filterizer2.Windows
 				//Iterate backwards over all previous tags
 				for (i = previousTagItemsAndHasBeenImplied.Count - 1; i >= 0; i--)
 				{
-					(TagItem tag, bool? isImpliedInNewLife, int newLifeIndex) = previousTagItemsAndHasBeenImplied[i];
+					(_, bool? isImpliedInNewLife, int newLifeIndex) = previousTagItemsAndHasBeenImplied[i];
 					
 					//If we never found an answer to whether it was implied, it is no longer in the search results, and must be skipped
 					if (isImpliedInNewLife == null)
@@ -525,25 +528,25 @@ namespace Filterizer2.Windows
 			Queue_CollectionChanged(null, null);
 			MasterTags_CollectionChanged(null, null);
 		}
-		private void Queue_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+		private void Queue_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs? e)
 		{
 			if (!_suppressCollectionChanged)
 			{
 				_currentQueueTagFullCollectionIdsCache = null;
-				Tags_CollectionChanged(sender, e);
+				Tags_CollectionChanged();
 			}
 		}
 		
-		private void MasterTags_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+		private void MasterTags_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs? e)
 		{
 			if (!_suppressCollectionChanged)
 			{
 				_currentMasterTagFullCollectionIdsCache = null;
-				Tags_CollectionChanged(sender, e);
+				Tags_CollectionChanged();
 			}
 		}
 
-		private void Tags_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+		private void Tags_CollectionChanged()
 		{
 			if (!_suppressCollectionChanged)
 			{
@@ -559,7 +562,7 @@ namespace Filterizer2.Windows
 			RefreshSearchResults();
 		}
 
-		private bool _stifleAllSelectionChangedEvents = false;
+		private bool _stifleAllSelectionChangedEvents;
 		
 		private void DeselectAllThatAreNotSelected(object sender)
 		{
@@ -594,10 +597,10 @@ namespace Filterizer2.Windows
 
 		private void RefreshQueueChilding()
 		{
-			if (_queueTags.Count <= 0) return;
+			if (QueueTags.Count <= 0) return;
 			HashSet<int> currentTags = GetCurrentTagCollectionIds();
 			// bool anyChange = false;
-			foreach (TagDisplayChildingItem tagDisplayChildingItem in _queueTags)
+			foreach (TagDisplayChildingItem tagDisplayChildingItem in QueueTags)
 			{
 				// anyChange = true;
 				tagDisplayChildingItem.IsImplied = IsTagImplied(tagDisplayChildingItem.Tag, currentTags);
@@ -621,34 +624,7 @@ namespace Filterizer2.Windows
 				    MessageBoxImage.Question
 			    ) == MessageBoxResult.Yes)
 			{
-				if (_queueTags.Count > 0)
-				{
-					_suppressCollectionChanged = true;
-					foreach (TagDisplayChildingItem queueTag in _queueTags)
-					{
-						if (!queueTag.IsImplied)
-						{
-							_masterTags.Add(queueTag.Tag);
-						}
-					}
-				}
-				
-				if (originalWindowTags != null)
-				{
-					originalWindowTags.Clear();
-					foreach (TagItem masterTag in _masterTags)
-					{
-						originalWindowTags.Add(masterTag);
-					}
-				}
-				else if (_onTagSelectComplete != null)
-				{
-					_onTagSelectComplete.Invoke(_masterTags.ToList());
-				}
-				else
-				{
-					throw new Exception("Opened media tagging helper without list of tags to write to or action to execute.");
-				}
+				ApplyTags();
 
 				DialogResult = true;
 				Close();
@@ -842,12 +818,12 @@ namespace Filterizer2.Windows
 				//Show children
 				HashSet<int> blacklist =
 				[
-					.._masterTags.Select(t => t.Id),
-					.._queueTags.Select(t => t.Tag.Id)
+					..MasterTags.Select(t => t.Id),
+					..QueueTags.Select(t => t.Tag.Id)
 				];
 
 				bool anyFound = false;
-				_childOfQueue.Clear();
+				ChildOfQueue.Clear();
 				foreach (TagItem childTag in TagRepository.GetAllTagsChildOf(parentTagItem.Tag.Id, blacklist))
 				{
 					//Filter all tags that are excluded by our current tags if in single mode
@@ -856,7 +832,7 @@ namespace Filterizer2.Windows
 						continue;
 					}
 					anyFound = true;
-					_childOfQueue.Add(new TagDisplayChildingItem(childTag, IsTagImplied(childTag, blacklist)));
+					ChildOfQueue.Add(new TagDisplayChildingItem(childTag, IsTagImplied(childTag, blacklist)));
 				}
 
 				if (anyFound)
@@ -872,7 +848,7 @@ namespace Filterizer2.Windows
 			}
 			else
 			{
-				_childOfQueue.Clear();
+				ChildOfQueue.Clear();
 				ChildListHeader.Text = "Children of Selected Queue Tag";
 				ChildListHeader.Foreground = Brushes.Gray;
 			}
@@ -884,7 +860,7 @@ namespace Filterizer2.Windows
 		{
 			if (sender is ListBox { SelectedItem: TagDisplayChildingItem selectedItem })
 			{
-				_queueTags.Remove(selectedItem);
+				QueueTags.Remove(selectedItem);
 				RefreshSearchResults();
 			}
 		}
@@ -907,7 +883,7 @@ namespace Filterizer2.Windows
 			//Send it to the queue
 			if (sender is ListBox { SelectedItem: TagDisplayChildingItem selectedItem })
 			{
-				_queueTags.Add(selectedItem);
+				QueueTags.Add(selectedItem);
 				RepopulateChildListBox();
 			}
 		}
@@ -1014,7 +990,7 @@ namespace Filterizer2.Windows
 						break;
 					//Right moves the tag to queue without moving the focus
 					case Key.Right:
-						_queueTags.Add((TagDisplayChildingItem)ChildListBox.SelectedItem);
+						QueueTags.Add((TagDisplayChildingItem)ChildListBox.SelectedItem);
 						RepopulateChildListBox();
 						e.Handled = true;
 						break;

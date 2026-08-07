@@ -4,10 +4,11 @@
         xmlns:wpf="clr-namespace:Vlc.DotNet.Wpf;assembly=Vlc.DotNet.Wpf"
         xmlns:windows="clr-namespace:Filterizer2.Windows"
         xmlns:controls="clr-namespace:Filterizer2.Controls"
-        xmlns:filterizer2="clr-namespace:Filterizer2"
+        xmlns:filterizer2="clr-namespace:Filterizer2" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
         x:Name="EditMediaWindow"
         
-        Title="New Media Entry" Height="900" Width="800">
+        Title="New Media Entry" Height="900" Width="800" d:DataContext="{d:DesignInstance windows:EditMediaEntryWindow}">
     <filterizer2:FilterizerWindow.Resources>
         <!-- The Proxy "captures" the Window's context -->
         <windows:BindingProxy x:Key="WindowProxy" Data="{Binding ElementName=EditMediaWindow}" />
@@ -58,7 +59,7 @@
 
             <ListBox Name="TagSearchResultsListBox" Margin="0, 5, 0, 0" Height="80" SelectionMode="Single" MouseLeftButtonUp="TagSearchResultsListBox_MouseLeftButtonUp">
                 <ListBox.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate DataType="{x:Type filterizer2:TagItem}">
                         <TextBlock Text="{Binding Name}" ToolTip="{Binding Description}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -77,9 +78,9 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate DataType="{x:Type filterizer2:TagItem}">
                             <StackPanel Orientation="Horizontal" Margin="5">
-                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" ToolTip="{Binding Description}">
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" ToolTip="{Binding Description }">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Foreground" Value="{Binding DisplayColorBrush}"/>

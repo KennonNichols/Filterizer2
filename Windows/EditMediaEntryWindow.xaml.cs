@@ -201,11 +201,20 @@ namespace Filterizer2.Windows
 		       //  isSingle = false;
 	        // }
 	        
-	        MediaTaggingHelperWindow mediaTaggerWindow = new MediaTaggingHelperWindow(_mediaFilePath);
-	        mediaTaggerWindow.SetStartingTagList(ref _currentTags);
+	        MediaTaggingHelperWindow mediaTaggerWindow = new MediaTaggingHelperWindow(_mediaFilePath, OnTagSelectionComplete, _currentTags);
 	        MediaPlayer.PausePlayer();
 	        mediaTaggerWindow.ShowDialog();
         }
+
+        private void OnTagSelectionComplete(List<TagItem> tags)
+        {
+	        _currentTags.Clear();
+	        foreach (TagItem tagItem in tags)
+	        {
+		        _currentTags.Add(tagItem);
+	        }
+        }
+        
         
         // public void SetTagList(IEnumerable<TagItem> tags)
         // {
